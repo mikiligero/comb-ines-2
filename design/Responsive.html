@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Comb-ines · Responsive</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"/>
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#0a0a0b;color:#f4f4f0;font-family:'Space Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{height:100dvh;display:flex;flex-direction:column}
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;gap:18px;
+    padding:14px 22px;border-bottom:1px solid rgba(255,255,255,.08);
+    background:#0a0a0b;flex:none;
+  }
+  .brand{display:flex;align-items:center;gap:10px}
+  .logo{
+    width:28px;height:28px;border-radius:8px;background:#D4FF3A;color:#0a0a0a;
+    display:grid;place-items:center;font-family:'JetBrains Mono',monospace;font-weight:700;
+  }
+  .brand b{font-size:16px;letter-spacing:-0.02em}
+  .brand em{font-style:normal;color:#86867f;font-weight:500}
+  .tabs{display:flex;background:#17171a;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:2px}
+  .tabs button{
+    appearance:none;border:0;background:transparent;color:#86867f;
+    font:inherit;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;
+    padding:7px 14px;border-radius:6px;cursor:pointer;letter-spacing:.06em;
+  }
+  .tabs button.on{background:#1e1e22;color:#f4f4f0}
+  .meta{font-family:'JetBrains Mono',monospace;font-size:11px;color:#86867f}
+  .meta b{color:#f4f4f0}
+
+  /* Stage */
+  .stage{flex:1;min-height:0;position:relative;overflow:hidden;background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(212,255,58,.05), transparent 60%),
+    #0a0a0b;
+  }
+  .stage-inner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:48px;padding:32px;overflow:auto}
+  .device{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .device .tag{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;color:#86867f;text-transform:uppercase}
+  .device .tag b{color:#f4f4f0}
+
+  /* Desktop frame */
+  .desktop{
+    width:1280px;height:780px;border-radius:14px;overflow:hidden;
+    background:#111;border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 30px 80px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.04);
+    position:relative;
+  }
+  .desktop .chrome{
+    height:32px;background:#17171a;display:flex;align-items:center;gap:6px;padding:0 12px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  .dot{width:11px;height:11px;border-radius:50%}
+  .desktop iframe{display:block;width:100%;height:calc(100% - 32px);border:0;background:#0a0a0b}
+
+  /* Phone frame */
+  .phone{
+    width:375px;height:780px;border-radius:46px;
+    background:#111;
+    border:1px solid rgba(255,255,255,.16);
+    box-shadow:0 30px 80px rgba(0,0,0,.55), inset 0 0 0 6px #050505, 0 0 0 1px rgba(255,255,255,.04);
+    position:relative;padding:10px;
+  }
+  .phone .screen{
+    width:100%;height:100%;border-radius:38px;overflow:hidden;
+    background:#0a0a0b;position:relative;
+  }
+  .phone iframe{display:block;width:100%;height:100%;border:0;background:#0a0a0b}
+  .phone .notch{
+    position:absolute;top:18px;left:50%;transform:translateX(-50%);
+    width:120px;height:30px;background:#000;border-radius:22px;z-index:2;
+  }
+
+  /* Stack on small screens */
+  @media (max-width: 1200px){
+    .stage-inner{flex-direction:column;align-items:flex-start;gap:32px}
+  }
+
+  /* Scale-to-fit wrapper trick (zoom) */
+  .scale-wrap{transform-origin:top center}
+
+  .legend{
+    position:absolute;left:24px;bottom:18px;font-family:'JetBrains Mono',monospace;
+    font-size:11px;color:#56564f;display:flex;gap:14px;
+  }
+  .legend a{color:#86867f;text-decoration:none;border-bottom:1px dashed #56564f}
+  .legend a:hover{color:#D4FF3A}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">⌇</div>
+      <b>Comb<em>-</em>ines</b>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#56564f;margin-left:8px">· vista responsive</span>
+    </div>
+    <div class="tabs" id="tabs">
+      <button data-mode="both" class="on">DESKTOP + MÓVIL</button>
+      <button data-mode="desktop">DESKTOP</button>
+      <button data-mode="phone">MÓVIL</button>
+    </div>
+    <div class="meta">desktop <b>1280×780</b> · móvil <b>375×780</b></div>
+  </div>
+
+  <div class="stage">
+    <div class="stage-inner" id="stage">
+      <div class="device" data-kind="desktop">
+        <div class="tag">DESKTOP · <b>1280 × 780</b></div>
+        <div class="scale-wrap" id="scaleDesktop">
+          <div class="desktop">
+            <div class="chrome">
+              <span class="dot" style="background:#ff5f56"></span>
+              <span class="dot" style="background:#ffbd2e"></span>
+              <span class="dot" style="background:#27c93f"></span>
+            </div>
+            <iframe src="Comb-ines.html" title="Comb-ines desktop"></iframe>
+          </div>
+        </div>
+      </div>
+
+      <div class="device" data-kind="phone">
+        <div class="tag">MÓVIL · <b>375 × 780</b></div>
+        <div class="scale-wrap" id="scalePhone">
+          <div class="phone">
+            <div class="notch"></div>
+            <div class="screen">
+              <iframe src="Comb-ines.html" title="Comb-ines mobile"></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span>Las dos vistas son la misma app — el layout se adapta a partir de 900px de ancho.</span>
+      <a href="Comb-ines.html" target="_blank">Abrir en tamaño real ↗</a>
+    </div>
+  </div>
+</div>
+
+<script>
+// Tab switcher
+const tabs = document.querySelectorAll("#tabs button");
+const stage = document.getElementById("stage");
+tabs.forEach(b => b.addEventListener("click", () => {
+  tabs.forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+  const mode = b.dataset.mode;
+  stage.querySelectorAll(".device").forEach(d => {
+    if (mode === "both") d.style.display = "";
+    else d.style.display = d.dataset.kind === mode ? "" : "none";
+  });
+  scale();
+}));
+
+// Auto-scale frames so they fit the viewport
+function scale(){
+  const stageEl = document.querySelector(".stage");
+  const sw = stageEl.clientWidth;
+  const sh = stageEl.clientHeight;
+  const visible = [...stage.querySelectorAll(".device")].filter(d => d.style.display !== "none");
+
+  // measure widths/heights at scale=1
+  const widths = visible.map(d => d.dataset.kind === "desktop" ? 1280 : 375);
+  const totalW = widths.reduce((a,b)=>a+b, 0) + 48 * (visible.length-1) + 64; // gaps + padding
+  const maxH = 780 + 40; // device height + tag/label
+
+  const scaleW = sw / totalW;
+  const scaleH = sh / maxH;
+  const s = Math.min(scaleW, scaleH, 1);
+
+  visible.forEach(d => {
+    const wrap = d.querySelector(".scale-wrap");
+    wrap.style.transform = `scale(${s})`;
+    wrap.style.width = (d.dataset.kind === "desktop" ? 1280 : 375) + "px";
+    wrap.style.height = (780) + "px";
+    wrap.style.marginBottom = (780 * (s-1)) + "px";
+  });
+}
+window.addEventListener("resize", scale);
+window.addEventListener("load", scale);
+</script>
+</body>
+</html>
