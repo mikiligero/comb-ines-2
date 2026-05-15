@@ -34,12 +34,18 @@ echo "  ⚠️  Guarda esta contraseña de BD:"
 echo "  DB_PASS=${DB_PASS}"
 echo ""
 
-echo "=== [4/8] Usuario del sistema ==="
-id "${APP_USER}" &>/dev/null || useradd -r -m -d "${APP_DIR}" -s /bin/bash "${APP_USER}"
-
-echo "=== [5/8] Clonar repositorio ==="
-if [ ! -d "${APP_DIR}/.git" ]; then
+echo "=== [4/8] Clonar repositorio ==="
+if [ -d "${APP_DIR}/.git" ]; then
+  echo "  ℹ️  Repo ya existe, actualizando"
+  git -C "${APP_DIR}" pull --ff-only
+else
+  rm -rf "${APP_DIR}"
   git clone https://github.com/mikiligero/comb-ines-2.git "${APP_DIR}"
+fi
+
+echo "=== [5/8] Usuario del sistema ==="
+if ! id "${APP_USER}" &>/dev/null; then
+  useradd -r -s /bin/bash -d "${APP_DIR}" "${APP_USER}"
 fi
 chown -R "${APP_USER}:${APP_USER}" "${APP_DIR}"
 
