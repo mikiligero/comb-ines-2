@@ -68,7 +68,7 @@ function Topbar({ title, crumb, right }){
   );
 }
 
-function Sidebar({ route, onRoute, user, onLogout }){
+function Sidebar({ route, onRoute, user, onLogout, onProfile }){
   const Item = ({ icon, label, to, badge }) => (
     <button className={"nav-item " + (route===to ? "active" : "")} onClick={()=>onRoute(to)}>
       <Icon name={icon}/>
@@ -93,16 +93,18 @@ function Sidebar({ route, onRoute, user, onLogout }){
       <Item icon="rope"    label="Cuerdas"     to="ropes"      badge={ROPES.length}/>
       <Item icon="list"    label="Saltos"      to="exercises"  badge={EXERCISES.length}/>
       <div className="spacer"/>
-      <div className="me">
-        <div className="avatar">{user.name[0]}</div>
+      <button className="me" onClick={onProfile}
+        style={{appearance:"none",border:"var(--line) solid var(--line-c)",background:"var(--bg-2)",cursor:"pointer",font:"inherit",color:"inherit",textAlign:"left",width:"100%"}}
+        title="Ver perfil">
+        <div className="avatar">{user.name[0]?.toUpperCase()}</div>
         <div className="meta">
           <b>{user.name}</b>
           <span>{user.email}</span>
         </div>
-        <button className="btn icon ghost" title="Logout" onClick={onLogout}>
+        <span className="btn icon ghost" title="Logout" onClick={(e)=>{ e.stopPropagation(); onLogout(); }}>
           <Icon name="logout" size={14}/>
-        </button>
-      </div>
+        </span>
+      </button>
     </aside>
   );
 }

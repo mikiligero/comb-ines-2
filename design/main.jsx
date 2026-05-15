@@ -6,6 +6,7 @@ function App(){
   const [route, setRoute] = React.useState("dashboard");
   const [workoutRoutine, setWorkoutRoutine] = React.useState(null);
   const [completed, setCompleted] = React.useState(false);
+  const [showProfile, setShowProfile] = React.useState(false);
 
   // Apply theme/style tokens to <body>
   React.useEffect(()=>{
@@ -72,7 +73,9 @@ function App(){
   return (
     <>
       <div className="app">
-        <Sidebar route={route} onRoute={handleRoute} user={user} onLogout={()=>setUser(null)}/>
+        <Sidebar route={route} onRoute={handleRoute} user={user}
+                 onLogout={()=>setUser(null)}
+                 onProfile={()=>setShowProfile(true)}/>
         <main className="main">
           {needsTopbar && <Topbar title="Dashboard" right={
             <span className="muted mono" style={{fontSize:12}}>11 may 2026</span>
@@ -81,8 +84,55 @@ function App(){
         </main>
         <Tabbar route={route} onRoute={handleRoute}/>
       </div>
+      {showProfile && (
+        <ProfileModal user={user}
+          onClose={()=>setShowProfile(false)}
+          onSave={(u)=>{ setUser(u); setShowProfile(false); }}
+          onLogout={()=>{ setUser(null); setShowProfile(false); }}/>
+      )}
       <AppTweaks t={t} setTweak={setTweak}/>
     </>
+  );
+}
+
+function ProfileModal({ user, onClose, onSave, onLogout }){
+  const [name, setName] = React.useState(user.name);
+  const [email, setEmail] = React.useState(user.email);
+  const initial = (name.trim()[0] || "?").toUpperCase();
+  return (
+    <Modal title="Perfil" onClose={onClose}
+      actions={<>
+        <button className="btn danger ghost" onClick={onLogout} style={{marginRight:"auto"}}>
+          <Icon name="logout" size={14}/> Cerrar sesión
+        </button>
+        <button className="btn ghost" onClick={onClose}>Cancelar</button>
+        <button className="btn primary" onClick={()=>onSave({ ...user, name: name.trim() || user.name, email })}>Guardar</button>
+      </>}>
+      <div style={{display:"flex",alignItems:"center",gap:14}}>
+        <div style={{
+          width:56,height:56,borderRadius:"50%",
+          background:"var(--accent)",color:"var(--accent-ink)",
+          display:"grid",placeItems:"center",
+          fontWeight:700,fontSize:22,fontFamily:"'Space Grotesk',sans-serif",
+          flex:"none",
+        }}>{initial}</div>
+        <div>
+          <div style={{fontSize:18,fontWeight:700}}>{name || "Sin nombre"}</div>
+          <div className="muted mono" style={{fontSize:12}}>{email}</div>
+        </div>
+      </div>
+      <div className="field">
+        <label>Nombre en la app</label>
+        <input className="input" value={name} onChange={(e)=>setName(e.target.value)} maxLength={32} autoFocus/>
+        <span className="muted" style={{fontSize:11}}>Así te saludaremos en el dashboard y aparecerás en tus sesiones.</span>
+      </div>
+      <div className="field">
+        <label>Email</label>
+        <input className="input" value={email} onChange={(e)=>setEmail(e.target.value)} disabled
+               style={{opacity:.7,cursor:"not-allowed"}}/>
+        <span className="muted" style={{fontSize:11}}>El email no se puede cambiar en este prototipo.</span>
+      </div>
+    </Modal>
   );
 }
 

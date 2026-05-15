@@ -33,6 +33,9 @@ function Workout({ routine, onExit, onComplete }){
   const [hr, setHr] = React.useState(132);
   const [calBurnt, setCalBurnt] = React.useState(0);
   const [showConfirmExit, setShowConfirmExit] = React.useState(false);
+  const [completed, setCompleted] = React.useState(false);
+  const [extraSec, setExtraSec] = React.useState(0);      // tiempo extra en modo freestyle
+  const [freestyle, setFreestyle] = React.useState(false);
 
   const step = steps[idx];
   const total = steps.reduce((s,st)=>s+st.duration,0);
@@ -40,12 +43,22 @@ function Workout({ routine, onExit, onComplete }){
 
   // tick
   React.useEffect(()=>{
-    if (!running || !step) return;
+    if (completed && !freestyle) return;
+    if (!running) return;
     const t = setInterval(()=>{
+      if (freestyle) {
+        setExtraSec(s=>s+1);
+        setHr(h => Math.max(110, Math.min(175, h + (Math.random()*4-1))));
+        setCalBurnt(c=> c + 0.12);
+        return;
+      }
+      if (!step) return;
       setElapsed(e=>{
         if (e+1 >= step.duration) {
           if (idx+1 >= steps.length) {
+            // último step — marcamos como completado
             setRunning(false);
+            setCompleted(true);
             return step.duration;
           }
           setIdx(i=>i+1);
@@ -54,13 +67,13 @@ function Workout({ routine, onExit, onComplete }){
         return e+1;
       });
       setHr(h => {
-        const drift = step.kind==="ex" ? (Math.random()*4-1) : (Math.random()*3-2);
+        const drift = step?.kind==="ex" ? (Math.random()*4-1) : (Math.random()*3-2);
         return Math.max(110, Math.min(175, h + drift));
       });
-      setCalBurnt(c=> c + (step.kind==="ex" ? 0.12 : 0.04));
+      setCalBurnt(c=> c + (step?.kind==="ex" ? 0.12 : 0.04));
     }, 1000);
     return ()=>clearInterval(t);
-  }, [running, idx, step, steps]);
+  }, [running, idx, step, steps, completed, freestyle]);
 
   // keyboard
   React.useEffect(()=>{
@@ -74,17 +87,42 @@ function Workout({ routine, onExit, onComplete }){
     return ()=>window.removeEventListener("keydown", fn);
   }, [steps.length]);
 
-  if (!step) {
+  if (completed && !freestyle) {
+    const exerciseCount = steps.filter(s=>s.kind==="ex").length;
+    const blockCount = routine.blocks.length;
+    const estimatedJumps = Math.round((total/60) * 110); // ~110 spm media
     return (
-      <div className="workout-shell">
-        <div style={{display:"grid",placeItems:"center",height:"100dvh",padding:40,textAlign:"center"}}>
-          <div>
-            <div className="eyebrow">WORKOUT COMPLETADO</div>
-            <h1 style={{fontSize:64,margin:"12px 0"}}>¡Buen trabajo!</h1>
-            <button className="btn primary lg" onClick={onComplete}>Ver resumen</button>
-          </div>
-        </div>
-      </div>
+      <CompletionScreen
+        routine={routine}
+        totalSec={total + extraSec}
+        extraSec={extraSec}
+        exercises={exerciseCount}
+        blocks={blockCount}
+        jumps={estimatedJumps}
+        hr={Math.round(hr)}
+        kcal={Math.round(calBurnt)}
+        onContinue={()=>{ setFreestyle(true); setRunning(true); }}
+        onFinish={onComplete}
+      />
+    );
+  }
+
+  if (!step) {
+    return null;
+  }
+
+  // Freestyle mode — después de completar la rutina, el usuario decidió "Continuar saltando"
+  if (freestyle) {
+    return (
+      <FreestyleMode
+        routine={routine}
+        baseTotal={total}
+        extraSec={extraSec}
+        running={running}
+        hr={Math.round(hr)}
+        onToggle={()=>setRunning(r=>!r)}
+        onFinish={onComplete}
+      />
     );
   }
 
@@ -150,7 +188,7 @@ function Workout({ routine, onExit, onComplete }){
                 </div>
               </div>
 
-              <div style={{display:"flex",alignItems:"center",gap:18}}>
+              <div className="exercise-row-wrap" style={{display:"flex",alignItems:"center",gap:18}}>
                 {step.kind==="rest" ? (
                   <div className="serif" style={{fontSize:48,color:"var(--fg-2)"}}>Descanso</div>
                 ) : (
@@ -323,6 +361,144 @@ function ExerciseIcon({ name }){
           </path>
         </g>
       </svg>
+    </div>
+  );
+}
+
+function CompletionScreen({ routine, totalSec, extraSec, exercises, blocks, jumps, hr, kcal, onContinue, onFinish }){
+  const ropesUsed = [...new Set(routine.blocks.map(b=>b.ropeId))].map(rid=>getRope(rid));
+
+  return (
+    <div className="workout-shell" style={{position:"fixed",inset:0,gridTemplateRows:"1fr"}}>
+      <div style={{
+        display:"flex",flexDirection:"column",
+        alignItems:"center",justifyContent:"center",
+        padding:"40px 28px",overflow:"auto",
+        position:"relative",
+      }}>
+        {/* Confetti-like accent halo */}
+        <div aria-hidden style={{
+          position:"absolute",top:"15%",left:"50%",transform:"translateX(-50%)",
+          width:520,height:520,borderRadius:"50%",
+          background:"radial-gradient(circle, color-mix(in oklab, var(--accent) 14%, transparent), transparent 65%)",
+          pointerEvents:"none",
+        }}/>
+
+        <div style={{position:"relative",zIndex:1,width:"100%",maxWidth:760,display:"flex",flexDirection:"column",alignItems:"center",gap:28}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{
+              width:36,height:36,borderRadius:10,
+              background:"var(--accent)",color:"var(--accent-ink)",
+              display:"grid",placeItems:"center",
+              fontFamily:"'JetBrains Mono',monospace",fontWeight:700,fontSize:16,
+            }}>✓</span>
+            <span className="eyebrow">RUTINA FINALIZADA</span>
+          </div>
+
+          <div style={{textAlign:"center"}}>
+            <h1 style={{fontSize:"clamp(48px, 8vw, 88px)",lineHeight:1,letterSpacing:"-0.04em"}}>
+              ¡Buen trabajo, <span className="serif" style={{color:"var(--accent)"}}>{routine.name.split(" ")[0]}</span>!
+            </h1>
+            <p className="muted" style={{marginTop:14,fontSize:16}}>
+              Has completado <b style={{color:"var(--fg)"}}>{routine.name}</b>
+              {extraSec > 0 && <> + <b style={{color:"var(--accent)"}}>{fmtTime(extraSec)}</b> extra</>}.
+            </p>
+          </div>
+
+          {/* Stats grid */}
+          <div className="grid grid-4" style={{width:"100%",gap:12}}>
+            <Stat label="Tiempo total"  value={fmtTime(totalSec)} sub={extraSec>0 ? `+${fmtTime(extraSec)} extra` : "planificado"}/>
+            <Stat label="Saltos"        value={jumps.toLocaleString("es-ES")}                    sub="estimados"/>
+            <Stat label="Ejercicios"    value={exercises}                                         sub={`${blocks} bloques`}/>
+            <Stat label="HR media"      value={hr} unit="bpm"                                     sub={`${kcal} kcal`}/>
+          </div>
+
+          {/* Cuerdas usadas */}
+          <div className="card" style={{width:"100%",padding:"16px 20px"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+              <div>
+                <div className="eyebrow">CUERDAS USADAS</div>
+                <div style={{display:"flex",gap:14,marginTop:10,flexWrap:"wrap"}}>
+                  {ropesUsed.map(r=>(
+                    <div key={r.id} style={{display:"flex",alignItems:"center",gap:8}}>
+                      <span style={{width:18,height:18,borderRadius:"50%",background:r.color,border:"1px solid var(--line-c)"}}/>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:600,lineHeight:1.1}}>{r.name}</div>
+                        <div className="mono muted" style={{fontSize:11}}>{r.weight}g</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                {routine.blocks.map((b,i)=>{
+                  const r = getRope(b.ropeId);
+                  return (
+                    <div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",borderRadius:8,background:"var(--bg-2)",border:"1px solid var(--line-c)"}}>
+                      <span className="mono" style={{fontSize:11,fontWeight:700}}>{b.letter}</span>
+                      <span style={{width:10,height:10,borderRadius:"50%",background:r.color,display:"inline-block"}}/>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Acciones */}
+          <div style={{display:"flex",gap:12,width:"100%",justifyContent:"center",flexWrap:"wrap",marginTop:6}}>
+            <button className="btn lg" onClick={onContinue} style={{minWidth:200}}>
+              <Icon name="play" size={14}/> Continuar saltando
+            </button>
+            <button className="btn primary xl" onClick={onFinish} style={{minWidth:240}}>
+              Finalizar y guardar <Icon name="check" size={16}/>
+            </button>
+          </div>
+
+          <div className="muted" style={{fontSize:12,textAlign:"center",marginTop:-8}}>
+            La sesión se guardará en tu histórico automáticamente al finalizar.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FreestyleMode({ routine, baseTotal, extraSec, running, hr, onToggle, onFinish }){
+  return (
+    <div className="workout-shell">
+      <div className="workout-top">
+        <div style={{display:"flex",alignItems:"center",gap:14}}>
+          <span className="chip solid">FREESTYLE</span>
+          <div>
+            <div className="eyebrow">RUTINA COMPLETADA · TIEMPO EXTRA</div>
+            <div style={{fontWeight:700,fontSize:16}}>{routine.name}</div>
+          </div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <span className="chip"><Icon name="heart" size={11}/> {hr} bpm</span>
+          <span className="chip mono">total {fmtTime(baseTotal + extraSec)}</span>
+        </div>
+      </div>
+
+      <div className="workout-stage" style={{gridTemplateColumns:"1fr",position:"relative"}}>
+        <div className="workout-center">
+          <div className="eyebrow" style={{color:"var(--accent)"}}>TIEMPO EXTRA</div>
+          <ExerciseIcon/>
+          <div className="big-timer">{fmtTime(extraSec)}</div>
+          <div className="muted" style={{fontSize:14,maxWidth:420,textAlign:"center"}}>
+            Sigue saltando todo lo que quieras. Pulsa finalizar cuando hayas terminado y se sumará al total.
+          </div>
+        </div>
+      </div>
+
+      <div className="workout-bottom">
+        <button className="btn primary xl" onClick={onToggle} style={{minWidth:200}}>
+          {running ? <><Icon name="pause" size={18}/> Pausa</> : <><Icon name="play" size={18}/> Reanudar</>}
+        </button>
+        <button className="btn lg" onClick={onFinish} style={{minWidth:200}}>
+          <Icon name="check" size={14}/> Finalizar
+        </button>
+      </div>
     </div>
   );
 }

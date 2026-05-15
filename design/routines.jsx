@@ -35,8 +35,8 @@ function Routines({ onRoute, onStartRoutine }){
           </button>
         </>
       }/>
-      <div className="scroll-area" style={{display:"grid",gridTemplateColumns:"280px 1fr",gap:20,padding:0,height:"100%"}}>
-        <div style={{borderRight:"1px solid var(--line-c)",overflow:"auto",padding:"18px 16px"}}>
+      <div className="scroll-area split-3-1 routines-split" style={{gap:0,padding:0,height:"100%"}}>
+        <div className="routines-list" style={{borderRight:"1px solid var(--line-c)",overflow:"auto",padding:"18px 16px"}}>
           <div className="eyebrow" style={{marginBottom:10}}>TUS RUTINAS</div>
           <div style={{display:"flex",flexDirection:"column",gap:6}}>
             {routines.map(r=>(
@@ -63,7 +63,7 @@ function Routines({ onRoute, onStartRoutine }){
           </div>
         </div>
 
-        <div style={{overflow:"auto",padding:"22px 28px"}}>
+        <div className="routines-editor" style={{overflow:"auto",padding:"22px 28px"}}>
           <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:16,flexWrap:"wrap",marginBottom:18}}>
             <div style={{flex:"1 1 360px"}}>
               <input className="input" value={rt.name} onChange={e=>updateRoutine({...rt, name:e.target.value})}
@@ -104,7 +104,7 @@ function Routines({ onRoute, onStartRoutine }){
             </button>
           </div>
 
-          <div style={{display:"flex",gap:10,marginTop:24}}>
+          <div style={{display:"flex",gap:10,marginTop:24,flexWrap:"wrap"}}>
             <button className="btn primary lg" onClick={()=>onStartRoutine(rt)}>
               <Icon name="play" size={14}/> Empezar rutina
             </button>

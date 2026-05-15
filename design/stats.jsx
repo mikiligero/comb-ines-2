@@ -64,7 +64,7 @@ function Stats({ onRoute }){
           </div>
         </div>
 
-        <div className="grid" style={{gridTemplateColumns:"2fr 1fr",gap:16,marginBottom:20}}>
+      <div className="split-2-1" style={{marginBottom:20}}>
           <div className="card">
             <h3>Minutos por semana</h3>
             <div style={{display:"flex",alignItems:"flex-end",gap:6,height:200,marginTop:14}}>

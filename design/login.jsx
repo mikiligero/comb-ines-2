@@ -3,13 +3,17 @@
 function Login({ onLogin }){
   const [email, setEmail] = React.useState("ana@combines.app");
   const [pwd, setPwd] = React.useState("•••••••••");
+  const [name, setName] = React.useState("Ana");
   const [mode, setMode] = React.useState("signin"); // signin | signup
   const [loading, setLoading] = React.useState(false);
 
   const submit = (e)=>{
     e.preventDefault();
     setLoading(true);
-    setTimeout(()=> onLogin({ name: email.split("@")[0].replace(/^./, c=>c.toUpperCase()), email }), 600);
+    const displayName = mode==="signup" && name.trim()
+      ? name.trim()
+      : email.split("@")[0].replace(/^./, c=>c.toUpperCase());
+    setTimeout(()=> onLogin({ name: displayName, email }), 600);
   };
 
   return (
@@ -125,6 +129,13 @@ function Login({ onLogin }){
             {mode==="signin" ? "Continúa donde lo dejaste." : "Crea tu perfil en menos de 30 segundos."}
           </p>
 
+          {mode==="signup" && (
+            <div className="field">
+              <label>Nombre en la app</label>
+              <input className="input" type="text" value={name} onChange={(e)=>setName(e.target.value)} placeholder="Cómo te llamaremos" maxLength={32}/>
+              <span className="muted" style={{fontSize:11}}>Aparecerá en tu perfil. Puedes cambiarlo después.</span>
+            </div>
+          )}
           <div className="field">
             <label>Email</label>
             <input className="input" type="email" value={email} onChange={(e)=>setEmail(e.target.value)} placeholder="tu@email.com"/>

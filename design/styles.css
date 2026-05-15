@@ -168,6 +168,7 @@ p{margin:0;line-height:1.5}
 .sidebar .me .meta{min-width:0;flex:1}
 .sidebar .me .meta b{display:block;font-size:13px;font-weight:600;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sidebar .me .meta span{font-size:11px;color:var(--fg-2)}
+.sidebar .me:hover{background:var(--bg-3)}
 
 /* ---- Main pane ---- */
 .main{
@@ -436,12 +437,34 @@ body[data-style="neon"] .big-timer{
 /* ---- Tab bar (mobile) ---- */
 .tabbar{display:none}
 
+/* ---- Responsive split helpers (use inside React for grid layouts) ---- */
+.split-2-1{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+.split-1-2{display:grid;grid-template-columns:1fr 2fr;gap:16px}
+.split-3-1{display:grid;grid-template-columns:280px 1fr;min-height:0}
+
+@media (max-width: 900px){
+  .split-2-1,.split-1-2{grid-template-columns:1fr}
+  .split-3-1{grid-template-columns:1fr}
+}
+
+@media (max-width: 900px){
+  .routines-split{overflow:auto !important;padding-bottom:84px !important;min-width:0}
+  .routines-list,.routines-editor{min-width:0 !important;max-width:100vw}
+  .routines-list{border-right:0 !important;border-bottom:1px solid var(--line-c) !important;padding:14px !important;overflow:visible !important}
+  .routines-editor{padding:18px 14px !important;overflow:visible !important}
+  .routines-list .card{width:100%}
+}
+
 /* ---- Responsive ---- */
 @media (max-width: 900px){
   .app{grid-template-columns:1fr}
   .sidebar{display:none}
-  .topbar{padding:14px 16px}
-  .scroll-area{padding:16px;padding-bottom:84px}
+  .topbar{padding:14px 16px;flex-wrap:wrap;gap:10px}
+  .topbar .right{flex-wrap:wrap}
+  .scroll-area{padding:16px;padding-bottom:84px;overflow-x:hidden}
+  .scroll-area .card,.scroll-area .block{max-width:100%;overflow:hidden}
+  .scroll-area .table{font-size:12px}
+  .scroll-area .table th,.scroll-area .table td{padding:10px 8px}
   .tabbar{
     display:flex;position:fixed;left:8px;right:8px;bottom:8px;
     background:var(--bg-1);border:var(--line) solid var(--line-c);
@@ -461,12 +484,31 @@ body[data-style="neon"] .big-timer{
   h2{font-size:24px}
   .login-shell{grid-template-columns:1fr}
   .login-art{display:none}
-  .workout-stage{grid-template-columns:1fr;grid-template-rows:1fr auto}
-  .workout-side{border-left:0;border-top:var(--line) solid var(--line-c);max-height:38vh}
-  .big-timer{font-size:24vw}
+
+  /* ---- Workout LIVE — mobile ---- */
+  .workout-top{flex-wrap:wrap;gap:8px;padding:10px 12px}
+  .workout-top > div:nth-child(2){order:3;flex-basis:100%;max-width:100% !important;margin:0 !important}
+  .workout-stage{grid-template-columns:1fr !important;grid-template-rows:1fr}
+  .workout-center{padding:20px 14px;gap:14px;justify-content:flex-start;padding-top:60px}
+  .workout-center > div:first-child{top:14px !important}
+  .workout-center > div:nth-child(2){
+    position:static !important;top:auto !important;right:auto !important;
+    align-self:flex-end;
+  }
+  .workout-center .exercise-row-wrap{flex-direction:column;gap:8px;text-align:center}
+  .workout-bottom{padding:10px;gap:6px}
+  .workout-bottom .btn{padding:12px 14px;font-size:13px;min-width:0 !important}
+  .workout-bottom .btn.xl{padding:14px 16px;font-size:15px;min-width:0 !important;flex:1}
+  .workout-bottom .btn.lg{padding:10px 12px;font-size:12px}
+  .big-timer{font-size:22vw}
+
+  /* ---- Login form on mobile ---- */
+  .login-form{padding:24px 18px;align-items:flex-start;padding-top:48px}
 }
 @media (max-width: 600px){
-  .grid-3,.grid-4{grid-template-columns:1fr}
+  .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
+  .topbar{padding:12px 14px}
+  .topbar .crumb b{font-size:14px}
 }
 
 /* utility */

@@ -37,7 +37,7 @@ function Dashboard({ user, onRoute, onStart }){
         <Stat label="Tiempo total"      value={`${Math.floor(totalMin/60)}h`} sub="histórico"/>
       </div>
 
-      <div className="grid" style={{gridTemplateColumns:"2fr 1fr",gap:16,marginBottom:28}}>
+      <div className="split-2-1" style={{marginBottom:28}}>
         <div className="card">
           <div className="eyebrow" style={{marginBottom:8}}>PRÓXIMO WORKOUT</div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:20,flexWrap:"wrap"}}>
@@ -80,7 +80,7 @@ function Dashboard({ user, onRoute, onStart }){
         </div>
       </div>
 
-      <div className="grid" style={{gridTemplateColumns:"2fr 1fr",gap:16}}>
+      <div className="split-2-1">
         <div className="card">
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
             <h3 style={{marginBottom:0}}>Sesiones recientes</h3>
