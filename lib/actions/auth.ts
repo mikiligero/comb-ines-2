@@ -6,6 +6,7 @@ import { profiles } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
+import { seedUserData } from "@/lib/seed";
 
 export async function login(email: string, password: string) {
   try {
@@ -23,11 +24,13 @@ export async function signup(email: string, password: string, name: string) {
   if (existing.length > 0) return { error: "Ya existe una cuenta con ese email" };
 
   const passwordHash = await bcrypt.hash(password, 12);
-  await db.insert(profiles).values({
+  const [profile] = await db.insert(profiles).values({
     email,
     passwordHash,
     name: name.trim() || email.split("@")[0],
-  });
+  }).returning({ id: profiles.id });
+
+  await seedUserData(profile.id);
 
   try {
     await signIn("credentials", { email, password, redirect: false });
