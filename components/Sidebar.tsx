@@ -10,6 +10,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/lib/userStore";
 import ProfileModal from "@/components/ProfileModal";
+import { logout } from "@/lib/actions/auth";
 
 type NavItem  = { Icon: React.ComponentType<LucideProps>; label: string; href: string };
 type NavGroup = { section?: string; items: NavItem[] };
@@ -19,7 +20,7 @@ const NAV: NavGroup[] = [
     items: [
       { Icon: Home,     label: "Dashboard",    href: "/dashboard" },
       { Icon: List,     label: "Rutinas",      href: "/routines" },
-      { Icon: Play,     label: "Empezar",      href: "/workout" },
+      { Icon: Play,     label: "Entrenar",      href: "/workout" },
     ],
   },
   {
@@ -138,7 +139,7 @@ export default function Sidebar() {
             title="Cerrar sesión"
             onClick={e => {
               e.stopPropagation();
-              // placeholder — real logout goes here
+              logout();
             }}
             style={{
               flex: "none", padding: 9, borderRadius: 8,

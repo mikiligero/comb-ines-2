@@ -1,11 +1,12 @@
 "use client";
 
-import type { RoutineBlock, RoutineItem } from "@/lib/types";
-import { ROPES, EXERCISES, getRope } from "@/lib/data";
+import type { Rope, Exercise, RoutineBlock, RoutineItem } from "@/lib/types";
 import { fmtTime, blockDuration } from "@/lib/fmt";
 
 type Props = {
   block: RoutineBlock;
+  ropes: Rope[];
+  exercises: Exercise[];
   onChange: (b: RoutineBlock) => void;
   onRemove: () => void;
 };
@@ -36,8 +37,8 @@ function PlusIcon({ size = 12 }: { size?: number }) {
   );
 }
 
-export default function BlockEditor({ block, onChange, onRemove }: Props) {
-  const rope = getRope(block.ropeId);
+export default function BlockEditor({ block, ropes, exercises, onChange, onRemove }: Props) {
+  const rope = ropes.find(r => r.id === block.ropeId);
   const dur = blockDuration(block);
 
   const update = (idx: number, next: RoutineItem) =>
@@ -45,7 +46,7 @@ export default function BlockEditor({ block, onChange, onRemove }: Props) {
   const remove = (idx: number) =>
     onChange({ ...block, items: block.items.filter((_, i) => i !== idx) });
   const addEx = () =>
-    onChange({ ...block, items: [...block.items, { kind: "ex", exId: EXERCISES[0].id, mode: "time", value: 30 }] });
+    onChange({ ...block, items: [...block.items, { kind: "ex", exId: exercises[0]?.id, exName: exercises[0]?.name, mode: "time", value: 30 }] });
   const addRest = () =>
     onChange({ ...block, items: [...block.items, { kind: "rest", value: 15 }] });
 
@@ -67,7 +68,7 @@ export default function BlockEditor({ block, onChange, onRemove }: Props) {
             onChange={e => onChange({ ...block, ropeId: e.target.value })}
             style={{ padding: "6px 28px 6px 8px", fontSize: 13, height: 32, minWidth: 160 }}
           >
-            {ROPES.map(r => (
+            {ropes.map(r => (
               <option key={r.id} value={r.id}>{r.name} · {r.weight}g</option>
             ))}
           </select>
@@ -86,10 +87,13 @@ export default function BlockEditor({ block, onChange, onRemove }: Props) {
               <select
                 className="input"
                 value={it.exId}
-                onChange={e => update(idx, { ...it, exId: e.target.value })}
+                onChange={e => {
+                  const ex = exercises.find(ex => ex.id === e.target.value);
+                  update(idx, { ...it, exId: e.target.value, exName: ex?.name });
+                }}
                 style={{ padding: "7px 10px", fontSize: 14, height: 34 }}
               >
-                {EXERCISES.map(e => (
+                {exercises.map(e => (
                   <option key={e.id} value={e.id}>{e.name}</option>
                 ))}
               </select>
@@ -102,14 +106,8 @@ export default function BlockEditor({ block, onChange, onRemove }: Props) {
 
             {it.kind === "ex" ? (
               <div className="seg" role="tablist">
-                <button
-                  className={it.mode === "time" ? "on" : ""}
-                  onClick={() => update(idx, { ...it, mode: "time" })}
-                >TIEMPO</button>
-                <button
-                  className={it.mode === "reps" ? "on" : ""}
-                  onClick={() => update(idx, { ...it, mode: "reps" })}
-                >REPS</button>
+                <button className={it.mode === "time" ? "on" : ""} onClick={() => update(idx, { ...it, mode: "time" })}>TIEMPO</button>
+                <button className={it.mode === "reps" ? "on" : ""} onClick={() => update(idx, { ...it, mode: "reps" })}>REPS</button>
               </div>
             ) : <span />}
 

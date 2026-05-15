@@ -15,6 +15,7 @@ export type Exercise = {
 export type RoutineItem = {
   kind: "ex" | "rest";
   exId?: string;
+  exName?: string;
   mode?: "time" | "reps";
   value: number;
 };

@@ -21,7 +21,7 @@ type Tab = {
 const TABS: Tab[] = [
   { Icon: Home,      label: "Home",    href: "/dashboard" },
   { Icon: List,      label: "Rutinas", href: "/routines" },
-  { Icon: Play,      label: "Saltar",  href: "/workout" },
+  { Icon: Play,      label: "Entrenar", href: "/workout" },
   { Icon: Clock,     label: "Hist.",   href: "/history" },
   { Icon: BarChart2, label: "Stats",   href: "/stats" },
 ];
@@ -32,13 +32,12 @@ export default function Tabbar() {
 
   return (
     <nav
-      className="min-[900px]:hidden"
+      className="flex min-[900px]:hidden"
       style={{
         position: "fixed",
         left: 8,
         right: 8,
         bottom: 8,
-        display: "flex",
         background: "var(--bg-1)",
         border: "1px solid var(--line-c)",
         borderRadius: "var(--radius-lg)",

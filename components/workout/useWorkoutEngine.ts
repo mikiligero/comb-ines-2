@@ -67,6 +67,7 @@ export function useWorkoutEngine(routine: Routine): WorkoutEngine {
         if (e + 1 >= step.duration) {
           if (idx + 1 >= steps.length) {
             setRunning(false);
+            setIdx(steps.length); // advance past end → done = true
             return step.duration;
           }
           setIdx(i => i + 1);

@@ -163,3 +163,20 @@ export function getRope(id: string): Rope | undefined {
 export function getExercise(id: string): Exercise | undefined {
   return EXERCISES.find(e => e.id === id);
 }
+
+export const JUMP_DISTRIBUTION = [
+  { name: "Basic Bounce",   pct: 32 },
+  { name: "Alternate Foot", pct: 22 },
+  { name: "Double Under",   pct: 14 },
+  { name: "Boxer Skip",     pct: 11 },
+  { name: "Criss-Cross",    pct: 8  },
+  { name: "High Knees",     pct: 7  },
+  { name: "Otros",          pct: 6  },
+];
+
+export const PRS = [
+  { name: "Saltos seguidos sin fallo",     value: "428",   unit: "saltos",  on: "2026-04-22" },
+  { name: "Double-unders en 1 minuto",     value: "86",    unit: "reps",    on: "2026-03-14" },
+  { name: "Sesión más larga",              value: "42:18", unit: "min:seg", on: "2026-02-02" },
+  { name: "Tiempo total en una semana",    value: "3:42",  unit: "horas",   on: "semana 16"  },
+];

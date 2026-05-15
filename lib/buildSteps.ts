@@ -1,5 +1,4 @@
 import type { Routine } from "./types";
-import { getExercise } from "./data";
 
 export type WorkoutStep = {
   kind: "ex" | "rest" | "transition";
@@ -41,7 +40,7 @@ export function buildSteps(routine: Routine): WorkoutStep[] {
         mode: it.mode ?? "time",
         duration: isReps ? Math.round(it.value / 2) : it.value,
         reps: isReps ? it.value : undefined,
-        exName: it.kind === "ex" ? (getExercise(it.exId!)?.name ?? it.exId) : undefined,
+        exName: it.kind === "ex" ? (it.exName ?? it.exId) : undefined,
         ropeId: b.ropeId,
         blockIdx: bi,
         blockLetter: b.letter,

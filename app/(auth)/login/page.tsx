@@ -3,28 +3,42 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight } from "lucide-react";
-import { useUserStore } from "@/lib/userStore";
+import { login, signup } from "@/lib/actions/auth";
 
 type Mode = "signin" | "signup";
 
 export default function LoginPage() {
   const router = useRouter();
-  const setUser = useUserStore(s => s.setUser);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [mode, setMode] = useState<Mode>("signin");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
     setLoading(true);
-    const displayName =
-      mode === "signup" && name.trim()
-        ? name.trim()
-        : (email || "ana@combines.app").split("@")[0].replace(/^./, c => c.toUpperCase());
-    setUser({ name: displayName, email: email || "ana@combines.app" });
-    setTimeout(() => router.push("/dashboard"), 600);
+    setError(null);
+
+    try {
+      let result;
+      if (mode === "signup") {
+        result = await signup(email, password, name);
+      } else {
+        result = await login(email, password);
+      }
+      if (result?.error) {
+        setError(result.error);
+        setLoading(false);
+        return;
+      }
+      router.push("/dashboard");
+      router.refresh();
+    } catch {
+      setError("Error al autenticar");
+      setLoading(false);
+    }
   }
 
   return (
@@ -184,7 +198,7 @@ export default function LoginPage() {
       </div>
 
       {/* ── Right panel: form — auto-placement in col 2 on desktop, full width on mobile ── */}
-      <div className="grid place-items-center" style={{ padding: 32 }}>
+      <div className="login-form grid place-items-center" style={{ padding: 32 }}>
         <form
           onSubmit={handleSubmit}
           style={{ width: "100%", maxWidth: 360, display: "flex", flexDirection: "column", gap: 18 }}
@@ -261,6 +275,10 @@ export default function LoginPage() {
             />
           </div>
 
+          {error && (
+            <p style={{ fontSize: 13, color: "#f87171", margin: 0 }}>{error}</p>
+          )}
+
           {/* Submit */}
           <button
             type="submit"
@@ -306,11 +324,6 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <div style={{ height: 1, background: "var(--line-c)" }} />
-
-          <div style={{ color: "var(--fg-2)", fontSize: 11, display: "flex", alignItems: "center", gap: 6 }}>
-            <span className="kbd">↵</span> para entrar como demo
-          </div>
         </form>
       </div>
     </div>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useId } from "react";
+import { useState, useTransition, useId } from "react";
 import Modal from "@/components/Modal";
 import { useUserStore } from "@/lib/userStore";
+import { logout, updateProfileName } from "@/lib/actions/auth";
 
 function LogoutIcon() {
   return (
@@ -13,21 +14,28 @@ function LogoutIcon() {
   );
 }
 
-type Props = {
-  onClose: () => void;
-};
-
-export default function ProfileModal({ onClose }: Props) {
+export default function ProfileModal({ onClose }: { onClose: () => void }) {
   const { name: storeName, email: storeEmail, setUser } = useUserStore();
   const [name, setName] = useState(storeName);
+  const [pending, startTransition] = useTransition();
   const nameId = useId();
   const emailId = useId();
 
   const initial = (name.trim()[0] ?? "?").toUpperCase();
 
   const handleSave = () => {
-    setUser({ name: name.trim() || storeName, email: storeEmail });
-    onClose();
+    const trimmed = name.trim() || storeName;
+    startTransition(async () => {
+      await updateProfileName(trimmed);
+      setUser({ name: trimmed, email: storeEmail });
+      onClose();
+    });
+  };
+
+  const handleLogout = () => {
+    startTransition(async () => {
+      await logout();
+    });
   };
 
   return (
@@ -36,27 +44,18 @@ export default function ProfileModal({ onClose }: Props) {
       onClose={onClose}
       actions={
         <>
-          <button
-            className="btn danger ghost"
-            onClick={onClose}
-            style={{ marginRight: "auto" }}
-          >
+          <button className="btn danger ghost" onClick={handleLogout} disabled={pending} style={{ marginRight: "auto" }}>
             <LogoutIcon /> Cerrar sesión
           </button>
-          <button className="btn ghost" onClick={onClose}>Cancelar</button>
-          <button className="btn primary" onClick={handleSave}>Guardar</button>
+          <button className="btn ghost" onClick={onClose} disabled={pending}>Cancelar</button>
+          <button className="btn primary" onClick={handleSave} disabled={pending}>
+            {pending ? "Guardando..." : "Guardar"}
+          </button>
         </>
       }
     >
-      {/* Avatar + preview */}
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-        <div style={{
-          width: 56, height: 56, borderRadius: "50%",
-          background: "var(--accent)", color: "var(--accent-ink)",
-          display: "grid", placeItems: "center",
-          fontWeight: 700, fontSize: 22,
-          flex: "none",
-        }}>
+        <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--accent)", color: "var(--accent-ink)", display: "grid", placeItems: "center", fontWeight: 700, fontSize: 22, flex: "none" }}>
           {initial}
         </div>
         <div>
@@ -65,35 +64,16 @@ export default function ProfileModal({ onClose }: Props) {
         </div>
       </div>
 
-      {/* Name */}
       <div className="field">
         <label htmlFor={nameId}>Nombre en la app</label>
-        <input
-          id={nameId}
-          className="input"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          maxLength={32}
-          autoFocus
-        />
-        <span className="muted" style={{ fontSize: 11 }}>
-          Así te saludaremos en el dashboard y aparecerás en tus sesiones.
-        </span>
+        <input id={nameId} className="input" value={name} onChange={e => setName(e.target.value)} maxLength={32} autoFocus />
+        <span className="muted" style={{ fontSize: 11 }}>Así te saludaremos en el dashboard y aparecerás en tus sesiones.</span>
       </div>
 
-      {/* Email — read-only */}
       <div className="field">
         <label htmlFor={emailId}>Email</label>
-        <input
-          id={emailId}
-          className="input"
-          value={storeEmail}
-          disabled
-          style={{ opacity: 0.7, cursor: "not-allowed" }}
-        />
-        <span className="muted" style={{ fontSize: 11 }}>
-          El email no se puede cambiar en este prototipo.
-        </span>
+        <input id={emailId} className="input" value={storeEmail} disabled style={{ opacity: 0.7, cursor: "not-allowed" }} />
+        <span className="muted" style={{ fontSize: 11 }}>El email no se puede cambiar.</span>
       </div>
     </Modal>
   );
