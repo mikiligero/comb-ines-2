@@ -27,6 +27,9 @@ sudo -u postgres psql <<SQL
     END IF;
   END \$\$;
   CREATE DATABASE ${DB_NAME} OWNER ${DB_USER};
+  \c ${DB_NAME}
+  GRANT ALL ON SCHEMA public TO ${DB_USER};
+  ALTER SCHEMA public OWNER TO ${DB_USER};
 SQL
 
 echo ""
