@@ -1,41 +1,50 @@
 #!/usr/bin/env bash
 # Primera instalación en LXC (Ubuntu 22.04 / Debian 12)
 # Ejecutar como root: bash scripts/install.sh
+# Es seguro ejecutarlo varias veces — no sobreescribe datos existentes.
 set -euo pipefail
 
 APP_DIR="/opt/combines"
 APP_USER="combines"
 DB_NAME="combines"
 DB_USER="combines"
-DB_PASS="$(openssl rand -hex 16)"
 NODE_VERSION="20"
 
 echo "=== [1/8] Paquetes del sistema ==="
 apt-get update -q
-apt-get install -y -q curl git postgresql nginx
+apt-get install -y -q curl git postgresql nginx openssl
 
 echo "=== [2/8] Node.js ${NODE_VERSION} LTS ==="
-curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -
-apt-get install -y -q nodejs
-npm install -g pnpm pm2
+if ! command -v node &>/dev/null; then
+  curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -
+  apt-get install -y -q nodejs
+else
+  echo "  ℹ️  Node.js ya instalado: $(node -v)"
+fi
+npm install -g pnpm pm2 2>/dev/null || true
 
 echo "=== [3/8] PostgreSQL: base de datos y usuario ==="
-sudo -u postgres psql <<SQL
+# Crear usuario si no existe
+sudo -u postgres psql -c "
   DO \$\$ BEGIN
     IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '${DB_USER}') THEN
-      CREATE USER ${DB_USER} WITH PASSWORD '${DB_PASS}';
+      CREATE USER ${DB_USER} WITH PASSWORD 'PLACEHOLDER';
     END IF;
   END \$\$;
-  CREATE DATABASE ${DB_NAME} OWNER ${DB_USER};
-  \c ${DB_NAME}
+"
+
+# Crear BD si no existe
+sudo -u postgres psql -c "
+  SELECT 'CREATE DATABASE ${DB_NAME} OWNER ${DB_USER}'
+  WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '${DB_NAME}')
+" -t | grep -q "CREATE DATABASE" && \
+  sudo -u postgres psql -c "CREATE DATABASE ${DB_NAME} OWNER ${DB_USER};" || true
+
+# Permisos en schema public (necesario en PostgreSQL 15+)
+sudo -u postgres psql -d "${DB_NAME}" -c "
   GRANT ALL ON SCHEMA public TO ${DB_USER};
   ALTER SCHEMA public OWNER TO ${DB_USER};
-SQL
-
-echo ""
-echo "  ⚠️  Guarda esta contraseña de BD:"
-echo "  DB_PASS=${DB_PASS}"
-echo ""
+"
 
 echo "=== [4/8] Clonar repositorio ==="
 if [ -d "${APP_DIR}/.git" ]; then
@@ -54,13 +63,20 @@ chown -R "${APP_USER}:${APP_USER}" "${APP_DIR}"
 
 echo "=== [6/8] Variables de entorno ==="
 if [ ! -f "${APP_DIR}/.env.local" ]; then
+  DB_PASS="$(openssl rand -hex 16)"
   AUTH_SECRET="$(openssl rand -hex 32)"
+
+  # Actualizar contraseña del usuario de BD
+  sudo -u postgres psql -c "ALTER USER ${DB_USER} WITH PASSWORD '${DB_PASS}';"
+
   cat > "${APP_DIR}/.env.local" <<ENV
 DATABASE_URL=postgres://${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}
 AUTH_SECRET=${AUTH_SECRET}
 ENV
   chown "${APP_USER}:${APP_USER}" "${APP_DIR}/.env.local"
-  echo "  ✅ .env.local creado automáticamente"
+  echo ""
+  echo "  ✅ .env.local creado. Contraseña de BD guardada en /opt/combines/.env.local"
+  echo ""
 else
   echo "  ℹ️  .env.local ya existe, no se sobreescribe"
 fi
@@ -72,9 +88,13 @@ sudo -u "${APP_USER}" pnpm db:migrate
 sudo -u "${APP_USER}" pnpm build
 
 echo "=== [8/8] PM2: arrancar y guardar ==="
-sudo -u "${APP_USER}" pm2 start npm --name combines -- start -- -p 3000
+if sudo -u "${APP_USER}" pm2 describe combines &>/dev/null; then
+  sudo -u "${APP_USER}" pm2 restart combines
+else
+  sudo -u "${APP_USER}" pm2 start npm --name combines -- start -- -p 3000
+fi
 sudo -u "${APP_USER}" pm2 save
-pm2 startup systemd -u "${APP_USER}" --hp "${APP_DIR}" | tail -1 | bash
+pm2 startup systemd -u "${APP_USER}" --hp "${APP_DIR}" | tail -1 | bash || true
 
 echo ""
 echo "=== [nginx] Proxy inverso ==="
