@@ -164,12 +164,14 @@ Cada vez que haya una nueva versión:
 bash /opt/combines/scripts/update.sh
 ```
 
-El script:
+El script hace todo, incluyendo cambios de estructura de base de datos:
 1. Descarga los cambios de GitHub
 2. Instala dependencias nuevas si las hay
-3. Aplica migraciones de base de datos (sin perder datos)
+3. **Aplica migraciones de base de datos** — si la versión nueva incluye cambios de estructura (nuevas columnas, tablas, etc.), se aplican automáticamente y de forma segura sin tocar los datos existentes
 4. Recompila
 5. Reinicia la app
+
+> No necesitas hacer nada especial cuando hay cambios de base de datos. El mismo comando de siempre lo gestiona todo.
 
 ---
 
