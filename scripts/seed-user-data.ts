@@ -41,6 +41,15 @@ async function ensureExercise(db: DB, userId: string, name: string) {
   return created;
 }
 
+async function ensureRope(db: DB, userId: string, name: string, color: string, weightG: number) {
+  const [row] = await db.select().from(ropes)
+    .where(and(eq(ropes.userId, userId), eq(ropes.name, name)));
+  if (row) return row;
+  const [created] = await db.insert(ropes).values({ userId, name, color, weightG, ropeType: "Speed" }).returning();
+  console.log(`    + cuerda: ${name}`);
+  return created;
+}
+
 async function routineExists(db: DB, userId: string, name: string) {
   const [row] = await db.select({ id: routines.id }).from(routines)
     .where(and(eq(routines.userId, userId), eq(routines.name, name)));
@@ -119,12 +128,53 @@ async function seedCardioCast(db: DB, userId: string) {
   ]);
 }
 
+async function seedTabataJumpStrong(db: DB, userId: string) {
+  if (await routineExists(db, userId, "Tabata Jump Strong")) return;
+
+  const userRopes = await db.select().from(ropes).where(eq(ropes.userId, userId));
+  const rope1lb  = userRopes.find(r => r.name.includes("1 LB gris"));
+  const rope2lb  = userRopes.find(r => r.name.includes("2 LB negra"));
+  if (!rope1lb || !rope2lb) { console.warn("    ! sin cuerdas 1 LB / 2 LB — omitiendo Tabata Jump Strong"); return; }
+
+  const userEx = await db.select().from(exercises).where(eq(exercises.userId, userId));
+  const ex = Object.fromEntries(userEx.map(e => [e.name, e.id]));
+
+  function tabataBlock(sequence: string[]) {
+    const items: { kind: "ex" | "rest"; exerciseId?: string; mode?: "time"; value: number }[] = [];
+    for (let i = 0; i < sequence.length; i++) {
+      items.push({ kind: "ex", exerciseId: ex[sequence[i]], mode: "time", value: 20 });
+      if (i < sequence.length - 1) items.push({ kind: "rest", value: 10 });
+    }
+    return items;
+  }
+
+  await insertRoutine(db, userId, {
+    name: "Tabata Jump Strong",
+    description: "HIIT Tabata: 20s trabajo / 10s descanso. 2 bloques con cuerdas pesadas.",
+    transitionSec: 60,
+  }, [
+    { letter: "A", ropeId: rope1lb.id, items: tabataBlock([
+      "Alternate Foot", "Double Unders", "Jump Rope Off Step", "High Knee Jump",
+      "Alternate Foot", "Double Unders", "Jump Rope Off Step", "High Knee Jump",
+    ])},
+    { letter: "B", ropeId: rope2lb.id, items: tabataBlock([
+      "Basic jump", "Scissors Jump", "Boxer Step", "Ski Jump",
+      "Basic jump", "Scissors Jump", "Boxer Step", "Ski Jump",
+    ])},
+  ]);
+}
+
 // ── Entry point ────────────────────────────────────────────────────────────
 
 async function seedForUser(userId: string, userName: string) {
   console.log(`  → ${userName}`);
   await ensureExercise(db, userId, "Jump Rope Off Step");
+  await ensureExercise(db, userId, "Double Unders");
+  await ensureExercise(db, userId, "High Knee Jump");
+  await ensureRope(db, userId, "1 LB gris",  "#9ca3af", 454);
+  await ensureRope(db, userId, "2 LB negra", "#1f2937", 907);
   await seedCardioCast(db, userId);
+  await seedTabataJumpStrong(db, userId);
   // Añade aquí las llamadas a futuras rutinas:
   // await seedNuevaRutina(db, userId);
 }

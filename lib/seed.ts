@@ -7,8 +7,8 @@ export async function seedUserData(userId: string) {
   // ── Exercises ──────────────────────────────────────────────
   const exerciseNames = [
     "Alternate Foot", "Basic jump", "Bell Jump", "Body Weight Squats",
-    "Boxer Step", "Elbow Plank", "Free Style Jump", "Jump Rope Jacks",
-    "Jump Rope Off Step", "Scissors Jump", "Ski Jump",
+    "Boxer Step", "Double Unders", "Elbow Plank", "Free Style Jump",
+    "High Knee Jump", "Jump Rope Jacks", "Jump Rope Off Step", "Scissors Jump", "Ski Jump",
   ];
   const insertedExercises = await db
     .insert(exercises)
@@ -22,6 +22,8 @@ export async function seedUserData(userId: string) {
     .values([
       { userId, name: "1/4 LB verde",  color: "#4ade80", weightG: 113, ropeType: "Speed" },
       { userId, name: "1/2 LB blanca", color: "#f5f5f5", weightG: 227, ropeType: "Speed" },
+      { userId, name: "1 LB gris",     color: "#9ca3af", weightG: 454, ropeType: "Speed" },
+      { userId, name: "2 LB negra",    color: "#1f2937", weightG: 907, ropeType: "Speed" },
     ])
     .returning({ id: ropes.id, name: ropes.name });
   const rope = Object.fromEntries(insertedRopes.map(r => [r.name, r.id]));
@@ -186,6 +188,53 @@ export async function seedUserData(userId: string) {
         blockId: blk.id, position: pi, kind: item.kind,
         exerciseId: "exerciseId" in item ? item.exerciseId : null,
         mode: "mode" in item ? item.mode : null,
+        value: item.value,
+      }))
+    );
+  }
+
+  // ── Rutina 4: Tabata Jump Strong (9 min) ──────────────────
+  const [rt4] = await db.insert(routines).values({
+    userId,
+    name: "Tabata Jump Strong",
+    description: "HIIT Tabata: 20s trabajo / 10s descanso. 2 bloques con cuerdas pesadas.",
+    transitionSec: 60,
+  }).returning({ id: routines.id });
+
+  // Tabata: [ex 20s, rest 10s] × 7 + [ex 20s] (sin rest final)
+  function tabataBlock(sequence: string[]): { kind: "ex" | "rest"; exerciseId?: string; mode?: "time"; value: number }[] {
+    const items: { kind: "ex" | "rest"; exerciseId?: string; mode?: "time"; value: number }[] = [];
+    for (let i = 0; i < sequence.length; i++) {
+      items.push({ kind: "ex", exerciseId: ex[sequence[i]], mode: "time", value: 20 });
+      if (i < sequence.length - 1) items.push({ kind: "rest", value: 10 });
+    }
+    return items;
+  }
+
+  const tabataSeqA = [
+    "Alternate Foot", "Double Unders", "Jump Rope Off Step", "High Knee Jump",
+    "Alternate Foot", "Double Unders", "Jump Rope Off Step", "High Knee Jump",
+  ];
+  const tabataSeqB = [
+    "Basic jump", "Scissors Jump", "Boxer Step", "Ski Jump",
+    "Basic jump", "Scissors Jump", "Boxer Step", "Ski Jump",
+  ];
+
+  const blocks4 = [
+    { letter: "A", ropeId: rope["1 LB gris"],  items: tabataBlock(tabataSeqA) },
+    { letter: "B", ropeId: rope["2 LB negra"], items: tabataBlock(tabataSeqB) },
+  ];
+
+  for (let bi = 0; bi < blocks4.length; bi++) {
+    const b = blocks4[bi];
+    const [blk] = await db.insert(routineBlocks).values({
+      routineId: rt4.id, ropeId: b.ropeId, letter: b.letter, position: bi,
+    }).returning({ id: routineBlocks.id });
+    await db.insert(routineItems).values(
+      b.items.map((item, pi) => ({
+        blockId: blk.id, position: pi, kind: item.kind,
+        exerciseId: item.exerciseId ?? null,
+        mode: item.mode ?? null,
         value: item.value,
       }))
     );
