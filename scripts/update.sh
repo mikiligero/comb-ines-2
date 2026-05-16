@@ -6,24 +6,26 @@ set -euo pipefail
 APP_DIR="/opt/combines"
 APP_USER="combines"
 
-echo "=== [1/5] Pull del repositorio ==="
+echo "=== [1/6] Pull del repositorio ==="
 cd "${APP_DIR}"
 sudo -u "${APP_USER}" git pull --ff-only
 
-echo "=== [2/5] Dependencias ==="
+echo "=== [2/6] Dependencias ==="
 sudo -u "${APP_USER}" pnpm install --frozen-lockfile
 
-echo "=== [3/5] Migraciones de base de datos ==="
-# Solo aplica las migraciones nuevas. Los datos existentes no se tocan.
+echo "=== [3/6] Migraciones de base de datos ==="
 sudo -u "${APP_USER}" pnpm db:migrate
 
-echo "=== [4/6] Tests ==="
+echo "=== [4/6] Datos de usuario ==="
+sudo -u "${APP_USER}" npx tsx scripts/add-cardio-coast.ts
+
+echo "=== [5/6] Tests ==="
 sudo -u "${APP_USER}" pnpm test
 
-echo "=== [5/6] Build ==="
+echo "=== [6/6] Build ==="
 sudo -u "${APP_USER}" pnpm build
 
-echo "=== [6/6] Reinicio ==="
+echo "=== [7/7] Reinicio ==="
 sudo -u "${APP_USER}" pm2 restart combines
 
 echo ""

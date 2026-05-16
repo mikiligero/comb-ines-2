@@ -1,15 +1,15 @@
-// Run: npx tsx scripts/add-cardio-coast.ts <email>
-// Example: npx tsx scripts/add-cardio-coast.ts mikiligero@gmail.com
+// Run for one user:  npx tsx scripts/add-cardio-coast.ts <email>
+// Run for all users: npx tsx scripts/add-cardio-coast.ts
 
 import { existsSync, readFileSync } from "fs";
 import { eq, and } from "drizzle-orm";
 
 if (existsSync(".env.local")) {
   readFileSync(".env.local", "utf8").split("\n").forEach(line => {
-    const eq2 = line.indexOf("=");
-    if (eq2 > 0 && !line.startsWith("#")) {
-      const key = line.slice(0, eq2).trim();
-      const val = line.slice(eq2 + 1).trim();
+    const eqIdx = line.indexOf("=");
+    if (eqIdx > 0 && !line.startsWith("#")) {
+      const key = line.slice(0, eqIdx).trim();
+      const val = line.slice(eqIdx + 1).trim();
       if (key && !(key in process.env)) process.env[key] = val;
     }
   });
@@ -20,41 +20,33 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import * as schema from "../lib/schema";
 const { profiles, exercises, ropes, routines, routineBlocks, routineItems } = schema;
 
-const email = process.argv[2];
-if (!email) { console.error("Usage: npx tsx scripts/add-cardio-coast.ts <email>"); process.exit(1); }
-
+const emailArg = process.argv[2] ?? null;
 const client = postgres(process.env.DATABASE_URL!);
 const db = drizzle(client, { schema });
 
-async function run() {
-  // ── Usuario ────────────────────────────────────────────────
-  const [user] = await db.select().from(profiles).where(eq(profiles.email, email));
-  if (!user) { console.error(`No se encontró usuario con email: ${email}`); process.exit(1); }
-  const userId = user.id;
-  console.log(`Usuario: ${user.name} (${userId})`);
+async function seedForUser(userId: string, userName: string) {
+  console.log(`→ ${userName} (${userId})`);
 
   // ── Ejercicio Jump Rope Off Step (idempotente) ─────────────
   let [offStep] = await db.select().from(exercises)
     .where(and(eq(exercises.userId, userId), eq(exercises.name, "Jump Rope Off Step")));
   if (!offStep) {
     [offStep] = await db.insert(exercises).values({ userId, name: "Jump Rope Off Step" }).returning();
-    console.log("Ejercicio creado: Jump Rope Off Step");
-  } else {
-    console.log("Ejercicio ya existe: Jump Rope Off Step");
+    console.log("  Ejercicio creado: Jump Rope Off Step");
   }
 
   // ── Rutina Cardio Coast (idempotente) ─────────────────────
   const [existing] = await db.select().from(routines)
     .where(and(eq(routines.userId, userId), eq(routines.name, "Cardio Coast")));
-  if (existing) { console.log("Rutina ya existe: Cardio Coast"); await client.end(); return; }
+  if (existing) { console.log("  Rutina ya existe: Cardio Coast"); return; }
 
   // ── Cuerdas del usuario ────────────────────────────────────
   const userRopes = await db.select().from(ropes).where(eq(ropes.userId, userId));
   const rope14 = userRopes.find(r => r.name.includes("1/4"));
   const rope12 = userRopes.find(r => r.name.includes("1/2"));
   if (!rope14 || !rope12) {
-    console.error("No se encontraron las cuerdas 1/4 LB y 1/2 LB para este usuario");
-    await client.end(); process.exit(1);
+    console.warn(`  Sin cuerdas 1/4 LB / 1/2 LB — omitiendo`);
+    return;
   }
 
   // ── Ejercicios del usuario ─────────────────────────────────
@@ -112,7 +104,19 @@ async function run() {
     );
   }
 
-  console.log("Rutina creada: Cardio Coast (4 bloques, ~15 min)");
+  console.log("  Rutina creada: Cardio Coast (4 bloques, ~15 min)");
+}
+
+async function run() {
+  if (emailArg) {
+    const [user] = await db.select().from(profiles).where(eq(profiles.email, emailArg));
+    if (!user) { console.error(`No encontrado: ${emailArg}`); await client.end(); process.exit(1); }
+    await seedForUser(user.id, user.name);
+  } else {
+    const users = await db.select({ id: profiles.id, name: profiles.name }).from(profiles);
+    console.log(`Procesando ${users.length} usuario(s)...`);
+    for (const u of users) await seedForUser(u.id, u.name);
+  }
   await client.end();
 }
 
