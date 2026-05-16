@@ -8,7 +8,7 @@ export async function seedUserData(userId: string) {
   const exerciseNames = [
     "Alternate Foot", "Basic jump", "Bell Jump", "Body Weight Squats",
     "Boxer Step", "Elbow Plank", "Free Style Jump", "Jump Rope Jacks",
-    "Scissors Jump", "Ski Jump",
+    "Jump Rope Off Step", "Scissors Jump", "Ski Jump",
   ];
   const insertedExercises = await db
     .insert(exercises)
@@ -128,6 +128,58 @@ export async function seedUserData(userId: string) {
     const b = blocks2[bi];
     const [blk] = await db.insert(routineBlocks).values({
       routineId: rt2.id, ropeId: b.ropeId, letter: b.letter, position: bi,
+    }).returning({ id: routineBlocks.id });
+    await db.insert(routineItems).values(
+      b.items.map((item, pi) => ({
+        blockId: blk.id, position: pi, kind: item.kind,
+        exerciseId: "exerciseId" in item ? item.exerciseId : null,
+        mode: "mode" in item ? item.mode : null,
+        value: item.value,
+      }))
+    );
+  }
+
+  // ── Rutina 3: Cardio Coast (15 min) ───────────────────────
+  const [rt3] = await db.insert(routines).values({
+    userId,
+    name: "Cardio Coast",
+    description: "4 bloques alternando cuerdas. Progresión de saltos con descansos activos.",
+    transitionSec: 60,
+  }).returning({ id: routines.id });
+
+  const cardioCoastBlockA = [
+    { kind: "ex" as const, exerciseId: ex["Jump Rope Jacks"],    mode: "time" as const, value: 15 },
+    { kind: "rest" as const,                                                              value: 20 },
+    { kind: "ex" as const, exerciseId: ex["Scissors Jump"],      mode: "time" as const, value: 20 },
+    { kind: "rest" as const,                                                              value: 20 },
+    { kind: "ex" as const, exerciseId: ex["Jump Rope Off Step"], mode: "time" as const, value: 25 },
+    { kind: "rest" as const,                                                              value: 25 },
+    { kind: "ex" as const, exerciseId: ex["Basic jump"],         mode: "time" as const, value: 25 },
+    { kind: "rest" as const,                                                              value: 25 },
+    { kind: "ex" as const, exerciseId: ex["Scissors Jump"],      mode: "time" as const, value: 20 },
+    { kind: "rest" as const,                                                              value: 20 },
+    { kind: "ex" as const, exerciseId: ex["Jump Rope Jacks"],    mode: "time" as const, value: 15 },
+  ];
+
+  const blocks3 = [
+    { letter: "A", ropeId: rope["1/4 LB verde"],  items: cardioCoastBlockA },
+    { letter: "B", ropeId: rope["1/2 LB blanca"], items: [
+      { kind: "ex" as const, exerciseId: ex["Free Style Jump"], mode: "time" as const, value: 45 },
+      { kind: "rest" as const,                                                           value: 30 },
+      { kind: "ex" as const, exerciseId: ex["Free Style Jump"], mode: "time" as const, value: 45 },
+    ]},
+    { letter: "C", ropeId: rope["1/4 LB verde"],  items: cardioCoastBlockA },
+    { letter: "D", ropeId: rope["1/2 LB blanca"], items: [
+      { kind: "ex" as const, exerciseId: ex["Free Style Jump"], mode: "time" as const, value: 60 },
+      { kind: "rest" as const,                                                           value: 30 },
+      { kind: "ex" as const, exerciseId: ex["Free Style Jump"], mode: "time" as const, value: 60 },
+    ]},
+  ];
+
+  for (let bi = 0; bi < blocks3.length; bi++) {
+    const b = blocks3[bi];
+    const [blk] = await db.insert(routineBlocks).values({
+      routineId: rt3.id, ropeId: b.ropeId, letter: b.letter, position: bi,
     }).returning({ id: routineBlocks.id });
     await db.insert(routineItems).values(
       b.items.map((item, pi) => ({
