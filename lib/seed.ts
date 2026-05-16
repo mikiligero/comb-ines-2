@@ -28,10 +28,10 @@ export async function seedUserData(userId: string) {
     .returning({ id: ropes.id, name: ropes.name });
   const rope = Object.fromEntries(insertedRopes.map(r => [r.name, r.id]));
 
-  // ── Rutina 1: 12 min Basic transition ─────────────────────
+  // ── Rutina 1: Basic Transition ────────────────────────────
   const [rt1] = await db.insert(routines).values({
     userId,
-    name: "12 min Basic transition",
+    name: "Basic Transition",
     description: "Progresión básica con cambio de cuerda. 3 bloques de intensidad creciente.",
     transitionSec: 30,
   }).returning({ id: routines.id });

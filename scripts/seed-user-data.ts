@@ -168,6 +168,12 @@ async function seedTabataJumpStrong(db: DB, userId: string) {
 
 async function seedForUser(userId: string, userName: string) {
   console.log(`  → ${userName}`);
+
+  // Renombrar rutinas antiguas
+  await db.update(schema.routines)
+    .set({ name: "Basic Transition" })
+    .where(and(eq(schema.routines.userId, userId), eq(schema.routines.name, "12 min Basic transition")));
+
   await ensureExercise(db, userId, "Jump Rope Off Step");
   await ensureExercise(db, userId, "Double Unders");
   await ensureExercise(db, userId, "High Knee Jump");
