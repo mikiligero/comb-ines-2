@@ -12,7 +12,10 @@ function toWorkout(r: typeof workouts.$inferSelect): WorkoutSession {
     id: r.id,
     routineId: r.routineId ?? "",
     routineName: r.routineNameSnapshot ?? "Sesión libre",
-    date: (r.startedAt?.toISOString() ?? "").slice(0, 10),
+    date: (r.endedAt?.toISOString() ?? r.startedAt?.toISOString() ?? "").slice(0, 10),
+    time: r.endedAt
+      ? r.endedAt.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })
+      : "",
     duration: r.durationSec ?? 0,
     jumps: r.jumps ?? 0,
     avgHr: r.avgHr ?? 0,

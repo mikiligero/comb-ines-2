@@ -17,10 +17,13 @@ echo "=== [3/5] Migraciones de base de datos ==="
 # Solo aplica las migraciones nuevas. Los datos existentes no se tocan.
 sudo -u "${APP_USER}" pnpm db:migrate
 
-echo "=== [4/5] Build ==="
+echo "=== [4/6] Tests ==="
+sudo -u "${APP_USER}" pnpm test
+
+echo "=== [5/6] Build ==="
 sudo -u "${APP_USER}" pnpm build
 
-echo "=== [5/5] Reinicio ==="
+echo "=== [6/6] Reinicio ==="
 sudo -u "${APP_USER}" pm2 restart combines
 
 echo ""

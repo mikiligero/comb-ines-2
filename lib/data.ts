@@ -144,6 +144,7 @@ function buildHistory(routines: Routine[]): WorkoutSession[] {
       routineId: rt.id,
       routineName: rt.name,
       date: d.toISOString().slice(0, 10),
+      time: "",
       duration,
       jumps:    800 + Math.floor(pseudoRand(i * 3)       * 1600),
       avgHr:    138 + Math.floor(pseudoRand(i * 3 + 1)   * 22),

@@ -8,11 +8,16 @@ export function fmtTime(s: number): string {
 }
 
 export function blockDuration(b: RoutineBlock): number {
-  return b.items.reduce((sum, it) => sum + it.value, 0);
+  return b.items.reduce((sum, it) => {
+    const isReps = it.kind === "ex" && it.mode === "reps";
+    return sum + (isReps ? Math.round(it.value / 2) : it.value);
+  }, 0);
 }
 
 export function routineDuration(rt: Routine): number {
   const blocks = rt.blocks.reduce((s, b) => s + blockDuration(b), 0);
-  const transitions = Math.max(0, rt.blocks.length - 1) * rt.transitionSec;
-  return blocks + transitions;
+  const transitionCount = rt.blocks.filter((b, i) =>
+    i > 0 && rt.blocks[i - 1].ropeId !== b.ropeId
+  ).length;
+  return blocks + transitionCount * rt.transitionSec;
 }

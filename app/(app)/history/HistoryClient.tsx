@@ -54,7 +54,7 @@ function WorkoutDetail({ h, ropeMap, onClose, onDelete }: { h: WorkoutSession; r
   }
 
   return (
-    <Modal title={`Sesión · ${h.date}`} onClose={onClose}
+    <Modal title={`Sesión · ${h.date}${h.time ? ` · ${h.time}` : ""}`} onClose={onClose}
       actions={<>
         <button className="btn danger ghost" onClick={() => setConfirmDelete(true)} style={{ marginRight: "auto" }}>
           <TrashIcon /> Borrar

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { saveWorkout } from "@/lib/actions/workouts";
 import { fmtTime } from "@/lib/fmt";
@@ -8,6 +8,7 @@ import type { Rope, Routine } from "@/lib/types";
 import { useUserStore } from "@/lib/userStore";
 import { useWorkoutEngine } from "@/components/workout/useWorkoutEngine";
 import ExerciseIcon from "@/components/workout/ExerciseIcon";
+import ExerciseVideo from "@/components/workout/ExerciseVideo";
 import RopeChange from "@/components/workout/RopeChange";
 import Modal from "@/components/Modal";
 
@@ -26,14 +27,74 @@ export default function WorkoutScreen({ routine, ropes }: { routine: Routine; ro
   const [phase, setPhase] = useState<Phase>("workout");
   const [showExit, setShowExit] = useState(false);
   const [extraSec, setExtraSec] = useState(0);
+  const startTimeRef = useRef(Date.now());
+  const [realDuration, setRealDuration] = useState(0);
+  const [finishedAt, setFinishedAt] = useState<Date | null>(null);
   const [freestyleRunning, setFreestyleRunning] = useState(true);
   const [saving, startSave] = useTransition();
 
   const ropeMap = new Map<string, Rope>(ropes.map(r => [r.id, r]));
   const engine = useWorkoutEngine(routine);
-  const { steps, elapsed, running, step, total, elapsedTotal, remaining, totalProgress, done, hr, calBurnt, nextEx, upcoming, upcomingInLabel, toggle, next, prev } = engine;
+  const { steps, elapsed, running, step, total, elapsedTotal, remaining, totalProgress, done, hr, calBurnt, nextEx, upcoming, upcomingInLabel, toggle, pause, play, next, prev } = engine;
 
-  useEffect(() => { if (done && phase === "workout") setPhase("completion"); }, [done, phase]);
+  const [previewing, setPreviewing] = useState(false);
+  const prevIdxRef = useRef(-1);
+  const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const dismissPreview = useCallback(() => {
+    if (previewTimerRef.current) { clearTimeout(previewTimerRef.current); previewTimerRef.current = null; }
+    setPreviewing(false);
+    play();
+  }, [play]);
+
+  // Show a 2-second preview screen before every exercise step.
+  // The cleanup resets prevIdxRef so React StrictMode's double-invoke
+  // re-triggers the preview correctly on the second mount.
+  useEffect(() => {
+    if (step?.kind !== "ex" || prevIdxRef.current === engine.idx) {
+      if (step?.kind !== "ex") prevIdxRef.current = engine.idx;
+      return;
+    }
+    prevIdxRef.current = engine.idx;
+    pause();
+    setPreviewing(true);
+
+    let active = true;
+    const startTimer = (ms: number) => {
+      previewTimerRef.current = setTimeout(() => {
+        if (active) { setPreviewing(false); play(); }
+      }, ms);
+    };
+
+    const slug = step?.exName
+      ? step.exName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")
+      : null;
+    if (slug) {
+      fetch(`/exercises/${slug}.mp4`, { method: "HEAD" })
+        .then(r => startTimer(r.ok ? 4000 : 2000))
+        .catch(() => startTimer(2000));
+    } else {
+      startTimer(2000);
+    }
+
+    return () => {
+      active = false;
+      if (previewTimerRef.current) { clearTimeout(previewTimerRef.current); previewTimerRef.current = null; }
+      setPreviewing(false);
+      play();
+      prevIdxRef.current = -1; // allow re-trigger on StrictMode remount
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engine.idx]);
+
+  useEffect(() => {
+    if (done && phase === "workout") {
+      const now = new Date();
+      setRealDuration(Math.round((now.getTime() - startTimeRef.current) / 1000));
+      setFinishedAt(now);
+      setPhase("completion");
+    }
+  }, [done, phase]);
 
   useEffect(() => {
     if (phase !== "freestyle" || !freestyleRunning) return;
@@ -44,14 +105,14 @@ export default function WorkoutScreen({ routine, ropes }: { routine: Routine; ro
   useEffect(() => {
     if (phase !== "workout") return;
     const fn = (e: KeyboardEvent) => {
-      if (e.key === " ") { e.preventDefault(); toggle(); }
+      if (e.key === " ") { e.preventDefault(); previewing ? dismissPreview() : toggle(); }
       else if (e.key === "ArrowRight" || e.key === "n") next();
       else if (e.key === "ArrowLeft"  || e.key === "p") prev();
       else if (e.key === "Escape") setShowExit(true);
     };
     window.addEventListener("keydown", fn);
     return () => window.removeEventListener("keydown", fn);
-  }, [phase, toggle, next, prev]);
+  }, [phase, previewing, toggle, dismissPreview, next, prev]);
 
   const ropeIds = [...new Set(routine.blocks.map(b => b.ropeId))];
 
@@ -85,12 +146,16 @@ export default function WorkoutScreen({ routine, ropes }: { routine: Routine; ro
 
   const doSave = (completed: boolean) => {
     startSave(async () => {
+      const elapsed = realDuration > 0
+        ? realDuration + extraSec
+        : Math.round((Date.now() - startTimeRef.current) / 1000) + extraSec;
       await saveWorkout({
         routineId: routine.id,
         routineName: routine.name,
         date: new Date().toISOString().slice(0, 10),
-        duration: total + extraSec,
-        jumps: Math.round((total + extraSec) * 1.8),
+        time: "",
+        duration: elapsed,
+        jumps: Math.round(elapsed * 1.8),
         avgHr: Math.round(hr),
         calories: Math.round(calBurnt),
         ropes: ropeIds,
@@ -103,8 +168,11 @@ export default function WorkoutScreen({ routine, ropes }: { routine: Routine; ro
   // ── Completion ──
   if (phase === "completion") {
     const ropesUsed = [...new Set(routine.blocks.map(b => b.ropeId))].map(rid => ropeMap.get(rid)).filter(Boolean) as Rope[];
-    const firstName = routine.name.split(" ")[0];
-    const jumps = Math.round(total * 1.8);
+    const firstName = (name || "campeón").split(" ")[0];
+    const jumps = Math.round(realDuration * 1.8);
+    const finishedAtStr = finishedAt
+      ? finishedAt.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })
+      : "";
     return (
       <div className="workout-shell" style={{ gridTemplateRows: "1fr" }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 28px", overflow: "auto", position: "relative" }}>
@@ -120,12 +188,13 @@ export default function WorkoutScreen({ routine, ropes }: { routine: Routine; ro
               </h1>
               <p className="muted" style={{ marginTop: 14, fontSize: 16 }}>
                 Has completado <b style={{ color: "var(--fg)" }}>{routine.name}</b>
-                {extraSec > 0 && <> + <b style={{ color: "var(--accent)" }}>{fmtTime(extraSec)}</b> extra</>}.
+                {extraSec > 0 && <> + <b style={{ color: "var(--accent)" }}>{fmtTime(extraSec)}</b> extra</>}
+                {finishedAtStr && <> a las <b style={{ color: "var(--fg)" }}>{finishedAtStr}</b></>}.
               </p>
             </div>
             <div className="grid-4" style={{ width: "100%", gap: 12 }}>
               {[
-                { label: "Tiempo total", value: fmtTime(total), sub: "planificado" },
+                { label: "Duración", value: fmtTime(realDuration + extraSec), sub: "tiempo real" },
                 { label: "Saltos",       value: jumps.toLocaleString("es-ES"), sub: "estimados" },
                 { label: "Ejercicios",   value: String(steps.filter(s => s.kind === "ex").length), sub: `${routine.blocks.length} bloques` },
                 { label: "HR media",     value: String(Math.round(hr)), unit: "bpm", sub: `${Math.round(calBurnt)} kcal` },
@@ -223,13 +292,27 @@ export default function WorkoutScreen({ routine, ropes }: { routine: Routine; ro
           <div className="mono muted" style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
             <span>{fmtTime(elapsedTotal)}</span><span>{Math.round(totalProgress)}%</span><span>{fmtTime(total)}</span>
           </div>
-          <div className="bar"><i style={{ width: `${totalProgress}%` }} /></div>
+          <div className="bar"><i style={{ width: `${100 - totalProgress}%`, position: "absolute", right: 0 }} /></div>
         </div>
         <span className="chip"><HeartIcon /> {Math.round(hr)} bpm</span>
       </div>
 
-      <div className="workout-stage" style={step.kind === "rest" ? { background: "color-mix(in oklab, var(--accent) 80%, var(--bg))", transition: "background 0.4s ease" } : { transition: "background 0.4s ease" }}>
-        {step.kind === "transition" && fromRope && toRope ? (
+      <div className="workout-stage" style={!previewing && step.kind === "rest" ? { background: "color-mix(in oklab, var(--accent) 80%, var(--bg))", transition: "background 0.4s ease" } : { transition: "background 0.4s ease" }}>
+        {previewing ? (
+          <div className="workout-center" style={{ cursor: "pointer" }} onClick={dismissPreview}>
+            <div className="eyebrow" style={{ color: "var(--accent)", marginBottom: 24 }}>A CONTINUACIÓN</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
+              <ExerciseVideo exId={step.exId} exName={step.exName} size={420} />
+              <div>
+                <div className="eyebrow">SALTO</div>
+                <div style={{ fontSize: "clamp(72px, 10vw, 120px)", fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1 }}>{step.exName}</div>
+                <div className="mono muted" style={{ marginTop: 10, fontSize: "clamp(24px, 3vw, 36px)" }}>
+                  {step.mode === "reps" && step.reps ? `${step.reps} reps` : fmtTime(step.duration)}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : step.kind === "transition" && fromRope && toRope ? (
           <RopeChange step={step} elapsed={elapsed} remaining={remaining} fromRope={fromRope} toRope={toRope} />
         ) : (
           <div className="workout-center">
@@ -263,7 +346,7 @@ export default function WorkoutScreen({ routine, ropes }: { routine: Routine; ro
               )}
             </div>
             <div className="big-timer">{fmtTime(remaining)}</div>
-            <div style={{ width: "min(620px, 80%)" }}><div className="bar"><i style={{ width: `${stepProgress}%`, ...(step.kind === "rest" ? { background: "var(--fg)" } : {}) }} /></div></div>
+            <div style={{ width: "min(620px, 80%)" }}><div className="bar"><i style={{ width: `${100 - stepProgress}%`, position: "absolute", right: 0, ...(step.kind === "rest" ? { background: "var(--fg)" } : {}) }} /></div></div>
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 4, flexWrap: "wrap", justifyContent: "center" }}>
               {nextEx && (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>

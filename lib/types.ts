@@ -40,6 +40,7 @@ export type WorkoutSession = {
   routineId: string;
   routineName: string;
   date: string;
+  time: string;
   duration: number;
   jumps: number;
   avgHr: number;

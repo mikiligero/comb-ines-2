@@ -25,6 +25,8 @@ export type WorkoutEngine = {
   upcoming: WorkoutStep | undefined;
   upcomingInLabel: string | null;
   toggle: () => void;
+  pause: () => void;
+  play: () => void;
   next: () => void;
   prev: () => void;
 };
@@ -98,11 +100,13 @@ export function useWorkoutEngine(routine: Routine): WorkoutEngine {
   }, []);
 
   const toggle = useCallback(() => setRunning(r => !r), []);
+  const pause  = useCallback(() => setRunning(false), []);
+  const play   = useCallback(() => setRunning(true), []);
 
   return {
     steps, idx, elapsed, running, hr, calBurnt,
     step, total, elapsedTotal, remaining, totalProgress, done,
     nextEx, upcoming, upcomingInLabel,
-    toggle, next, prev,
+    toggle, pause, play, next, prev,
   };
 }
