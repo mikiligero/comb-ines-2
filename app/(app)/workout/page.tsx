@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getRoutines } from "@/lib/actions/routines";
 import { getRopes } from "@/lib/actions/ropes";
-import { routineDuration } from "@/lib/fmt";
+import { routineDuration, fmtRoutineLabel } from "@/lib/fmt";
 import RoutineBlocksStrip from "@/components/RoutineBlocksStrip";
 import Topbar from "@/components/Topbar";
 import type { Rope } from "@/lib/types";
@@ -26,17 +26,15 @@ export default async function EntrenarPage() {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {routines.map(r => {
-              const mins = Math.round(routineDuration(r) / 60);
               const uniqueRopes = [...new Set(r.blocks.map(b => b.ropeId))];
               return (
                 <div key={r.id} className="card" style={{ display: "flex", alignItems: "center", gap: 20, padding: "18px 20px" }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em" }}>{r.name}</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em" }}>{fmtRoutineLabel(r.name, routineDuration(r))}</div>
                     {r.description && (
                       <div className="muted" style={{ fontSize: 13, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.description}</div>
                     )}
                     <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap", alignItems: "center" }}>
-                      <span className="chip">{mins} min</span>
                       <span className="chip">{r.blocks.length} bloques</span>
                       <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                         {uniqueRopes.map(rid => {
