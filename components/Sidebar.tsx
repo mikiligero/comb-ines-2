@@ -34,7 +34,7 @@ const NAV: NavGroup[] = [
     section: "Librería",
     items: [
       { Icon: Link2,    label: "Cuerdas",      href: "/library/ropes" },
-      { Icon: Zap,      label: "Saltos",       href: "/library/exercises" },
+      { Icon: Zap,      label: "Ejercicios",   href: "/library/exercises" },
     ],
   },
 ];

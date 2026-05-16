@@ -62,7 +62,7 @@ export default function ExercisesClient({ initialExercises, videoSlugs }: { init
 
   return (
     <>
-      <Topbar title="Saltos" right={
+      <Topbar title="Ejercicios" right={
         <button className="btn primary" onClick={() => setEditing({ name: "", isNew: true })}><PlusIcon /> Nuevo salto</button>
       } />
 
