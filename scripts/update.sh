@@ -21,7 +21,7 @@ echo "=== [3/6] Migraciones de base de datos ==="
 sudo -u "${APP_USER}" pnpm db:migrate
 
 echo "=== [4/6] Datos de usuario ==="
-sudo -u "${APP_USER}" pnpm exec tsx scripts/add-cardio-coast.ts
+sudo -u "${APP_USER}" pnpm exec tsx scripts/seed-user-data.ts
 
 echo "=== [5/6] Tests ==="
 sudo -u "${APP_USER}" pnpm test
