@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { saveRoutine, deleteRoutine } from "@/lib/actions/routines";
-import { routineDuration } from "@/lib/fmt";
+import { routineDuration, fmtRoutineLabel } from "@/lib/fmt";
 import type { Routine, RoutineBlock, Rope, Exercise } from "@/lib/types";
 import Topbar from "@/components/Topbar";
 import RoutineBlocksStrip from "@/components/RoutineBlocksStrip";
@@ -142,8 +142,7 @@ export default function RoutinesClient({ initialRoutines, ropes, exercises }: Pr
             {routineList.map(r => (
               <button key={r.id} onClick={() => selectRoutine(r)} style={{ textAlign: "left", cursor: "pointer", padding: "12px 14px", borderRadius: "var(--radius)", border: "1px solid " + (selectedId === r.id ? "var(--fg)" : "var(--line-c)"), background: selectedId === r.id ? "var(--bg-2)" : "var(--bg-1)", fontFamily: "inherit", color: "inherit", appearance: "none" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                  <b style={{ fontSize: 14 }}>{r.name}</b>
-                  <span className="mono faded" style={{ fontSize: 11 }}>{Math.round(routineDuration(r) / 60)}m</span>
+                  <b style={{ fontSize: 14 }}>{fmtRoutineLabel(r.name, routineDuration(r))}</b>
                 </div>
                 <div style={{ marginTop: 8 }}><RoutineBlocksStrip routine={r} ropeMap={ropeMap} /></div>
                 <div className="muted" style={{ fontSize: 11, marginTop: 6, fontFamily: "var(--font-mono)" }}>

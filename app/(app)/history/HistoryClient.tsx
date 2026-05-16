@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { fmtTime } from "@/lib/fmt";
+import { fmtTime, fmtRoutineLabel } from "@/lib/fmt";
 import { deleteWorkout } from "@/lib/actions/workouts";
 import type { WorkoutSession, Rope } from "@/lib/types";
 import Topbar from "@/components/Topbar";
@@ -48,7 +48,7 @@ function WorkoutDetail({ h, ropeMap, onClose, onDelete }: { h: WorkoutSession; r
             {pending ? "Borrando..." : <><TrashIcon /> Borrar</>}
           </button>
         </>}>
-        <p className="muted" style={{ fontSize: 14 }}>Se eliminará la sesión del <b style={{ color: "var(--fg)" }}>{h.date}</b> — {h.routineName}. Esta acción no se puede deshacer.</p>
+        <p className="muted" style={{ fontSize: 14 }}>Se eliminará la sesión del <b style={{ color: "var(--fg)" }}>{h.date}</b> — {fmtRoutineLabel(h.routineName, h.duration)}. Esta acción no se puede deshacer.</p>
       </Modal>
     );
   }
@@ -62,7 +62,7 @@ function WorkoutDetail({ h, ropeMap, onClose, onDelete }: { h: WorkoutSession; r
         <button className="btn ghost" onClick={onClose}>Cerrar</button>
         {h.routineId && <Link href={`/workout/${h.routineId}`} className="btn primary">Repetir rutina</Link>}
       </>}>
-      <div><div className="eyebrow">RUTINA</div><div style={{ fontSize: 22, fontWeight: 700, marginTop: 4 }}>{h.routineName}</div></div>
+      <div><div className="eyebrow">RUTINA</div><div style={{ fontSize: 22, fontWeight: 700, marginTop: 4 }}>{fmtRoutineLabel(h.routineName, h.duration)}</div></div>
       <div className="grid-3" style={{ gap: 10 }}>
         {[
           { label: "DURACIÓN", value: fmtTime(h.duration) },
@@ -138,7 +138,7 @@ export default function HistoryClient({ workouts, ropes }: { workouts: WorkoutSe
                 <tr key={h.id} className="clickable" onClick={() => setSelected(h)}>
                   <td className="mono">{h.date}</td>
                   <td>
-                    {h.routineName}
+                    {fmtRoutineLabel(h.routineName, h.duration)}
                     {!h.completed && <span className="chip" style={{ marginLeft: 6, color: "var(--warn)", borderColor: "color-mix(in oklab, var(--warn) 30%, transparent)", background: "color-mix(in oklab, var(--warn) 12%, var(--bg-1))", fontSize: 10 }}>parcial</span>}
                   </td>
                   <td className="mono">{fmtTime(h.duration)}</td>

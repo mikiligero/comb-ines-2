@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { getRoutines } from "@/lib/actions/routines";
 import { getWorkouts } from "@/lib/actions/workouts";
 import { getRopes } from "@/lib/actions/ropes";
-import { routineDuration, fmtTime } from "@/lib/fmt";
+import { routineDuration, fmtTime, fmtRoutineLabel } from "@/lib/fmt";
 import type { Rope, Routine, WorkoutSession } from "@/lib/types";
 import RoutineBlocksStrip from "@/components/RoutineBlocksStrip";
 
@@ -115,9 +115,8 @@ export default async function DashboardPage() {
               <div className="eyebrow" style={{ marginBottom: 8 }}>PRÓXIMO WORKOUT</div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20, flexWrap: "wrap" }}>
                 <div style={{ flex: "1 1 240px" }}>
-                  <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-0.02em" }}>{nextRoutine.name}</div>
+                  <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-0.02em" }}>{fmtRoutineLabel(nextRoutine.name, routineDuration(nextRoutine))}</div>
                   <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-                    <span className="chip">{Math.round(routineDuration(nextRoutine) / 60)} min</span>
                     <span className="chip">{nextRoutine.blocks.length} bloques</span>
                     <span className="chip">{new Set(nextRoutine.blocks.map(b => b.ropeId)).size} cuerdas</span>
                   </div>
@@ -146,7 +145,7 @@ export default async function DashboardPage() {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <Link href={`/workout/${nextRoutine.id}`} className="btn primary lg" style={{ justifyContent: "center" }}>
-                  <PlayIcon /> {nextRoutine.name}
+                  <PlayIcon /> {fmtRoutineLabel(nextRoutine.name, routineDuration(nextRoutine))}
                 </Link>
                 <Link href="/routines" className="btn" style={{ justifyContent: "center" }}>Ver rutinas</Link>
               </div>

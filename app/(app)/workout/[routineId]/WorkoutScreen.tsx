@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { saveWorkout } from "@/lib/actions/workouts";
-import { fmtTime } from "@/lib/fmt";
+import { fmtTime, fmtRoutineLabel } from "@/lib/fmt";
 import type { Rope, Routine } from "@/lib/types";
 import { useUserStore } from "@/lib/userStore";
 import { useWorkoutEngine } from "@/components/workout/useWorkoutEngine";
@@ -187,7 +187,7 @@ export default function WorkoutScreen({ routine, ropes }: { routine: Routine; ro
                 ¡Buen trabajo, <span className="serif" style={{ color: "var(--accent)" }}>{firstName}</span>!
               </h1>
               <p className="muted" style={{ marginTop: 14, fontSize: 16 }}>
-                Has completado <b style={{ color: "var(--fg)" }}>{routine.name}</b>
+                Has completado <b style={{ color: "var(--fg)" }}>{fmtRoutineLabel(routine.name, total)}</b>
                 {extraSec > 0 && <> + <b style={{ color: "var(--accent)" }}>{fmtTime(extraSec)}</b> extra</>}
                 {finishedAtStr && <> a las <b style={{ color: "var(--fg)" }}>{finishedAtStr}</b></>}.
               </p>
@@ -241,7 +241,7 @@ export default function WorkoutScreen({ routine, ropes }: { routine: Routine; ro
         <div className="workout-top">
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <span className="chip solid">FREESTYLE</span>
-            <div><div className="eyebrow">RUTINA COMPLETADA · TIEMPO EXTRA</div><div style={{ fontWeight: 700, fontSize: 16 }}>{routine.name}</div></div>
+            <div><div className="eyebrow">RUTINA COMPLETADA · TIEMPO EXTRA</div><div style={{ fontWeight: 700, fontSize: 16 }}>{fmtRoutineLabel(routine.name, total)}</div></div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span className="chip"><HeartIcon /> {Math.round(hr)} bpm</span>
@@ -286,7 +286,7 @@ export default function WorkoutScreen({ routine, ropes }: { routine: Routine; ro
       <div className="workout-top">
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <button className="btn icon ghost" onClick={() => setShowExit(true)}><BackIcon /></button>
-          <div><div className="eyebrow">EN CURSO</div><div style={{ fontWeight: 700, fontSize: 18 }}>{routine.name}</div></div>
+          <div><div className="eyebrow">EN CURSO</div><div style={{ fontWeight: 700, fontSize: 18 }}>{fmtRoutineLabel(routine.name, total)}</div></div>
         </div>
         <div style={{ flex: 1, maxWidth: 520, margin: "0 24px" }}>
           <div className="mono muted" style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>

@@ -14,6 +14,10 @@ export function blockDuration(b: RoutineBlock): number {
   }, 0);
 }
 
+export function fmtRoutineLabel(name: string, durationSec: number): string {
+  return `${Math.round(durationSec / 60)} min - ${name}`;
+}
+
 export function routineDuration(rt: Routine): number {
   const blocks = rt.blocks.reduce((s, b) => s + blockDuration(b), 0);
   const transitionCount = rt.blocks.filter((b, i) =>
