@@ -9,6 +9,10 @@ APP_USER="combines"
 echo "=== [1/6] Pull del repositorio ==="
 cd "${APP_DIR}"
 sudo -u "${APP_USER}" git pull --ff-only
+# Re-exec con la versión nueva del script (bash lee el archivo en memoria antes del pull)
+if [ "${1:-}" != "--post-pull" ]; then
+  exec bash "${APP_DIR}/scripts/update.sh" --post-pull
+fi
 
 echo "=== [2/6] Dependencias ==="
 sudo -u "${APP_USER}" pnpm install --frozen-lockfile
