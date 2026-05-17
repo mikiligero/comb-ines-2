@@ -9,6 +9,7 @@ import Topbar from "@/components/Topbar";
 import RoutineBlocksStrip from "@/components/RoutineBlocksStrip";
 import BlockEditor from "@/components/BlockEditor";
 import Modal from "@/components/Modal";
+import ExerciseVideo from "@/components/workout/ExerciseVideo";
 
 function PlusIcon({ size = 14 }: { size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>;
@@ -32,6 +33,8 @@ export default function RoutinesClient({ initialRoutines, ropes, exercises }: Pr
   const [dirty, setDirty] = useState(false);
   const [newOpen, setNewOpen] = useState(false);
   const [pending, startTransition] = useTransition();
+
+  const [zoomedEx, setZoomedEx] = useState<{ id: string; name: string } | null>(null);
 
   const ropeMap = new Map(ropes.map(r => [r.id, r]));
   const routineList = initialRoutines;
@@ -179,6 +182,35 @@ export default function RoutinesClient({ initialRoutines, ropes, exercises }: Pr
               </div>
             </div>
 
+            {(() => {
+              const exMap = new Map(exercises.map(e => [e.id, e.name]));
+              const seen = new Set<string>();
+              const uniqueExs: { id: string; name: string }[] = [];
+              for (const b of rt.blocks) {
+                for (const item of b.items) {
+                  if (item.kind === "ex" && item.exId && !seen.has(item.exId)) {
+                    seen.add(item.exId);
+                    const name = exMap.get(item.exId) ?? item.exName ?? "";
+                    if (name) uniqueExs.push({ id: item.exId, name });
+                  }
+                }
+              }
+              if (!uniqueExs.length) return null;
+              return (
+                <div style={{ marginBottom: 18 }}>
+                  <div className="eyebrow" style={{ marginBottom: 10 }}>EJERCICIOS</div>
+                  <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4 }}>
+                    {uniqueExs.map(ex => (
+                      <button key={ex.id} onClick={() => setZoomedEx(ex)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flexShrink: 0, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                        <ExerciseVideo exName={ex.name} size={120} />
+                        <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", textAlign: "center", maxWidth: 120, lineHeight: 1.3, color: "var(--fg)" }}>{ex.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {rt.blocks.map((b, bi) => (
                 <BlockEditor key={bi} block={b} ropes={ropes} exercises={exercises} onChange={nb => updateBlock(bi, nb)} onRemove={() => removeBlock(bi)} />
@@ -220,6 +252,18 @@ export default function RoutinesClient({ initialRoutines, ropes, exercises }: Pr
           </>}>
           <p className="muted" style={{ fontSize: 14 }}>Crea una rutina vacía con un bloque inicial. Podrás ajustar todo después.</p>
         </Modal>
+      )}
+
+      {zoomedEx && (
+        <div onClick={() => setZoomedEx(null)} style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,0.7)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+            <button onClick={() => setZoomedEx(null)} style={{ position: "absolute", top: -14, right: -14, zIndex: 1, width: 32, height: 32, borderRadius: "50%", background: "var(--bg-1)", border: "1px solid var(--line-c)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--fg)" }}>
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+            <ExerciseVideo exName={zoomedEx.name} size={300} />
+            <span style={{ fontSize: 14, fontFamily: "var(--font-mono)", color: "#fff" }}>{zoomedEx.name}</span>
+          </div>
+        </div>
       )}
     </>
   );
