@@ -54,6 +54,39 @@ export async function deleteExercise(id: string) {
   revalidatePath("/library/exercises");
 }
 
+export async function uploadExercisePhoto(formData: FormData, exName: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  await userId();
+
+  const file = formData.get("photo");
+  if (!(file instanceof File) || file.size === 0) return { ok: false, error: "Archivo no válido" };
+  if (!file.type.startsWith("image/")) return { ok: false, error: "El archivo debe ser una imagen" };
+
+  const slug = exName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+  if (!slug) return { ok: false, error: "Nombre de ejercicio inválido" };
+
+  const ext = (file.name.split(".").pop() ?? "").toLowerCase();
+  const bytes = Buffer.from(await file.arrayBuffer());
+
+  const dir = path.join(process.cwd(), "public", "exercises");
+  if (!existsSync(dir)) await mkdir(dir, { recursive: true });
+  const outPath = path.join(dir, `${slug}.jpg`);
+
+  if (ext === "jpg" || ext === "jpeg") {
+    await writeFile(outPath, bytes);
+  } else {
+    const tmpPath = path.join(tmpdir(), `ex-photo-${Date.now()}.${ext || "png"}`);
+    await writeFile(tmpPath, bytes);
+    try {
+      await execFileAsync("ffmpeg", ["-y", "-i", tmpPath, "-vframes", "1", outPath]);
+    } finally {
+      await unlink(tmpPath).catch(() => {});
+    }
+  }
+
+  revalidatePath("/library/exercises");
+  return { ok: true };
+}
+
 export async function uploadExerciseVideo(formData: FormData, exName: string): Promise<{ ok: true } | { ok: false; error: string }> {
   await userId(); // auth check
 

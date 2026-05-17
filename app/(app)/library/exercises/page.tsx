@@ -16,8 +16,22 @@ function getVideoSlugs(): Set<string> {
   }
 }
 
+function getPhotoSlugs(): Set<string> {
+  try {
+    const dir = path.join(process.cwd(), "public", "exercises");
+    return new Set(
+      readdirSync(dir)
+        .filter(f => f.endsWith(".jpg"))
+        .map(f => f.replace(".jpg", ""))
+    );
+  } catch {
+    return new Set();
+  }
+}
+
 export default async function ExercisesPage() {
   const exercises = await getExercises();
   const videoSlugs = getVideoSlugs();
-  return <ExercisesClient initialExercises={exercises} videoSlugs={videoSlugs} />;
+  const photoSlugs = getPhotoSlugs();
+  return <ExercisesClient initialExercises={exercises} videoSlugs={videoSlugs} photoSlugs={photoSlugs} />;
 }

@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createExercise, updateExercise, uploadExerciseVideo } from "@/lib/actions/exercises";
+import { createExercise, updateExercise, uploadExerciseVideo, uploadExercisePhoto } from "@/lib/actions/exercises";
 import type { Exercise } from "@/lib/types";
 import Topbar from "@/components/Topbar";
 import Modal from "@/components/Modal";
@@ -17,6 +17,9 @@ function ChevronRightIcon() {
 function VideoIcon() {
   return <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>;
 }
+function PhotoIcon() {
+  return <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>;
+}
 
 function toSlug(name: string) {
   return name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
@@ -24,15 +27,17 @@ function toSlug(name: string) {
 
 type EditingExercise = Partial<Exercise> & { isNew?: boolean };
 
-export default function ExercisesClient({ initialExercises, videoSlugs }: { initialExercises: Exercise[]; videoSlugs: Set<string> }) {
+export default function ExercisesClient({ initialExercises, videoSlugs, photoSlugs }: { initialExercises: Exercise[]; videoSlugs: Set<string>; photoSlugs: Set<string> }) {
   const router = useRouter();
   const [editing, setEditing] = useState<EditingExercise | null>(null);
   const [pending, startTransition] = useTransition();
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [videoKey, setVideoKey] = useState(0);
+  const [mediaKey, setMediaKey] = useState(0);
   const [localVideoSlugs, setLocalVideoSlugs] = useState(videoSlugs);
+  const [localPhotoSlugs, setLocalPhotoSlugs] = useState(photoSlugs);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const handleVideoUpload = async (file: File) => {
     if (!editing?.name?.trim()) return;
@@ -43,8 +48,21 @@ export default function ExercisesClient({ initialExercises, videoSlugs }: { init
     const res = await uploadExerciseVideo(fd, editing.name.trim());
     setUploading(false);
     if (!res.ok) { setUploadError(res.error); return; }
-    setVideoKey(k => k + 1);
+    setMediaKey(k => k + 1);
     setLocalVideoSlugs(prev => new Set([...prev, toSlug(editing.name!.trim())]));
+  };
+
+  const handlePhotoUpload = async (file: File) => {
+    if (!editing?.name?.trim()) return;
+    setUploadError(null);
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("photo", file);
+    const res = await uploadExercisePhoto(fd, editing.name.trim());
+    setUploading(false);
+    if (!res.ok) { setUploadError(res.error); return; }
+    setMediaKey(k => k + 1);
+    setLocalPhotoSlugs(prev => new Set([...prev, toSlug(editing.name!.trim())]));
   };
 
   const handleSave = () => {
@@ -81,6 +99,9 @@ export default function ExercisesClient({ initialExercises, videoSlugs }: { init
                       {localVideoSlugs.has(toSlug(e.name)) && (
                         <span style={{ color: "var(--accent)", lineHeight: 0 }} title="Tiene vídeo"><VideoIcon /></span>
                       )}
+                      {!localVideoSlugs.has(toSlug(e.name)) && localPhotoSlugs.has(toSlug(e.name)) && (
+                        <span style={{ color: "var(--accent)", lineHeight: 0 }} title="Tiene foto"><PhotoIcon /></span>
+                      )}
                     </span>
                   </td>
                   <td><ChevronRightIcon /></td>
@@ -102,7 +123,7 @@ export default function ExercisesClient({ initialExercises, videoSlugs }: { init
           </>}>
           {!editing.isNew && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-              <ExerciseVideo key={videoKey} exName={editing.name} size={200} />
+              <ExerciseVideo key={mediaKey} exName={editing.name} size={200} />
               <input
                 ref={fileInputRef}
                 type="file"
@@ -110,14 +131,31 @@ export default function ExercisesClient({ initialExercises, videoSlugs }: { init
                 style={{ display: "none" }}
                 onChange={e => { const f = e.target.files?.[0]; if (f) handleVideoUpload(f); e.target.value = ""; }}
               />
-              <button
-                className="btn ghost"
-                style={{ fontSize: 13 }}
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-              >
-                {uploading ? "Procesando vídeo…" : "Subir vídeo"}
-              </button>
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f); e.target.value = ""; }}
+              />
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  className="btn ghost"
+                  style={{ fontSize: 13 }}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  {uploading ? "Procesando…" : "Subir vídeo"}
+                </button>
+                <button
+                  className="btn ghost"
+                  style={{ fontSize: 13 }}
+                  onClick={() => imageInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  Subir foto
+                </button>
+              </div>
               {uploadError && <div style={{ fontSize: 12, color: "var(--danger)" }}>{uploadError}</div>}
             </div>
           )}

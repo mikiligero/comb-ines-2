@@ -13,29 +13,45 @@ type Props = {
   size?: number;
 };
 
+type State = "video" | "photo" | "icon";
+
 export default function ExerciseVideo({ exName, size = 140 }: Props) {
-  const [failed, setFailed] = useState(false);
+  const [state, setState] = useState<State>("video");
   const slug = exName ? toSlug(exName) : null;
 
-  if (!slug || failed) return <ExerciseIcon name={exName} />;
+  const mediaStyle = {
+    width: size,
+    height: size,
+    objectFit: "cover" as const,
+    borderRadius: 12,
+    background: "var(--bg-2)",
+    flexShrink: 0,
+  };
+
+  if (!slug || state === "icon") return <ExerciseIcon name={exName} />;
+
+  if (state === "video") {
+    return (
+      <video
+        key={slug}
+        src={`/exercises/${slug}.mp4`}
+        autoPlay
+        loop
+        muted
+        playsInline
+        onError={() => setState("photo")}
+        style={mediaStyle}
+      />
+    );
+  }
 
   return (
-    <video
-      key={slug}
-      src={`/exercises/${slug}.mp4`}
-      autoPlay
-      loop
-      muted
-      playsInline
-      onError={() => setFailed(true)}
-      style={{
-        width: size,
-        height: size,
-        objectFit: "cover",
-        borderRadius: 12,
-        background: "var(--bg-2)",
-        flexShrink: 0,
-      }}
+    <img
+      key={slug + "-photo"}
+      src={`/exercises/${slug}.jpg`}
+      alt={exName}
+      onError={() => setState("icon")}
+      style={mediaStyle}
     />
   );
 }
